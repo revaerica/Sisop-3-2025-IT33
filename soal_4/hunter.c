@@ -225,7 +225,8 @@ void login(struct SystemData *sys) {
                        "2. Dungeon Raid\n"
                        "3. Battle\n"
                        "4. Toggle Notification [%s]\n"
-                       "5. Logout\n", notif_active ? "ON" : "OFF");
+                       "5. Logout\n", notif_active ? "ON" : "OFF"
+                       "Choose: ");
                 scanf("%d", &choose);
 
                 if (choose == 1) showDungeon(current, sys);
