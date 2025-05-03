@@ -97,6 +97,7 @@ void dungeonRaid(struct Hunter *hunter, struct SystemData *sys) {
                 printf("Level up to %d!\n", hunter->level);
             }
 
+            // Remove the raided dungeon
             for (int j = i; j < sys->num_dungeons - 1; j++) {
                 sys->dungeons[j] = sys->dungeons[j + 1];
             }
@@ -160,6 +161,7 @@ void battle(struct SystemData *sys, struct Hunter *self) {
         self->exp += opponent->exp;
         self->level += opponent->level;
 
+        // Remove the defeated hunter
         for (int j = idx; j < sys->num_hunters - 1; j++) {
             sys->hunters[j] = sys->hunters[j + 1];
         }
@@ -180,6 +182,7 @@ void battle(struct SystemData *sys, struct Hunter *self) {
         opponent->exp += self->exp;
         opponent->level += self->level;
 
+        // Remove the lost hunter
         for (int i = 0; i < sys->num_hunters; i++) {
             if (&sys->hunters[i] == self) {
                 for (int j = i; j < sys->num_hunters - 1; j++) {
@@ -198,9 +201,21 @@ void battle(struct SystemData *sys, struct Hunter *self) {
 
 void *notifDungeon(void *arg) {
     while (!stop_notif) {
-        printf("\n📢 Dungeon Notification:\n");
-        showDungeon(hunter_global, sys_global);
-        sleep(3);
+        int found = 0;
+        for (int i = 0; i < sys_global->num_dungeons; i++) {
+            struct Dungeon d = sys_global->dungeons[i];
+            if (hunter_global->level >= d.min_level) {
+                found = 1;
+                printf("\n📢 \033[1;33m[Dungeon Alert]\033[0m %s is available for you!\n", d.name);
+                fflush(stdout);
+                break; // No need to check further once one is found
+            }
+        }
+        if (!found) {
+            printf("\n📢 \033[1;31mNo available dungeon at your level.\033[0m\n");
+            fflush(stdout);
+        }
+        sleep(3); // Sleep for 3 seconds before checking again
     }
     return NULL;
 }
@@ -245,7 +260,7 @@ void login(struct SystemData *sys) {
                 } else {
                     if (notif_active) {
                         stop_notif = 1;
-                        pthread_join(notif_thread, NULL);
+                        pthread_join(notif_thread, NULL);  
                     }
                     break;
                 }
