@@ -182,7 +182,6 @@ void battle(struct SystemData *sys, struct Hunter *self) {
         opponent->exp += self->exp;
         opponent->level += self->level;
 
-        // Remove the lost hunter
         for (int i = 0; i < sys->num_hunters; i++) {
             if (&sys->hunters[i] == self) {
                 for (int j = i; j < sys->num_hunters - 1; j++) {
@@ -204,18 +203,20 @@ void *notifDungeon(void *arg) {
         int found = 0;
         for (int i = 0; i < sys_global->num_dungeons; i++) {
             struct Dungeon d = sys_global->dungeons[i];
+
             if (hunter_global->level >= d.min_level) {
                 found = 1;
-                printf("\n📢 \033[1;33m[Dungeon Alert]\033[0m %s is available for you!\n", d.name);
+                printf("\n📢 \033[1;33m[Dungeon Alert]\033[0m %s is available for you! (Level required: %d)\n", d.name, d.min_level);
                 fflush(stdout);
-                break; // No need to check further once one is found
             }
         }
+
         if (!found) {
-            printf("\n📢 \033[1;31mNo available dungeon at your level.\033[0m\n");
+            printf("\n📢 \033[1;31mNo available dungeons at your level.\033[0m\n");
             fflush(stdout);
         }
-        sleep(3); // Sleep for 3 seconds before checking again
+        
+        sleep(3); 
     }
     return NULL;
 }
