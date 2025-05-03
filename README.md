@@ -86,12 +86,15 @@ Berikan error handling untuk opsi-opsi yang tidak ada.
 ##### Output
 
 Hunter tidak bisa dijalankan sebelum sistem dijalankan
+
 <img width="548" alt="image" src="https://github.com/user-attachments/assets/8e02f0ce-f479-4978-b002-b37c6fa15252" />
 
 Sistem dijalankan
+
 <img width="480" alt="image" src="https://github.com/user-attachments/assets/ced58d52-31a3-4e1a-b5b1-d1653eabc198" />
 
 Hunter dapat dijalankan
+
 <img width="365" alt="image" src="https://github.com/user-attachments/assets/b97e1417-cb84-434f-9151-1ecd6e13dca1" />
 
 #### b. Untuk memastikan keteraturan sistem, Sung Jin Woo memutuskan untuk membuat fitur registrasi dan login di program hunter. Setiap hunter akan memiliki key unik dan stats awal (Level=1, EXP=0, ATK=10, HP=100, DEF=5). Data hunter disimpan dalam shared memory tersendiri yang terhubung dengan sistem.
@@ -160,7 +163,9 @@ Setiap dungeon akan disimpan dalam shared memory sendiri yang berbeda dan dapat 
 
 #### Kendala
 ##### 1. Hunter masih bisa diakses sebelum system diakses
+
 ![Screenshot 2025-05-03 075250](https://github.com/user-attachments/assets/d064485a-5e6c-42a3-a6f3-8f382f7f4688)
 
-##### 2. Notif yang terus muncul, sehingga mengganggu saat akan memilih opsi di MENU
-![Screenshot 2025-05-01 192000](https://github.com/user-attachments/assets/a82cea8f-30ac-4d99-b95f-4700f930fb1f)
+##### 2. Notif yang muncul, tidak semua dungeon yang aktif. namun, hanya Dungeon yang di list paling awal.
+
+![Screenshot 2025-05-03 142427](https://github.com/user-attachments/assets/a8c10b08-9771-486e-a17c-a62a498f3cb1)
