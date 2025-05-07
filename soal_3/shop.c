@@ -22,6 +22,7 @@ typedef struct {
     Weapon currentWeapon;
     int baseDamage;
     int hasWeapon;
+    int enemiesDefeated;
 } Player;
 
 Weapon weapons[MAX_WEAPONS] = {
@@ -32,8 +33,7 @@ Weapon weapons[MAX_WEAPONS] = {
     {"Sky Piercer", 275, 20, "Execute: Auto-kill enemies <20%% HP", 1},
     {"Blade of Despair", 600, 45, "Despair: +25% damage to enemies <50%% HP", 1},
     {"Wind of Nature", 480, 0, "Wind Chant: Immune to phys damage (2s)", 1},
-    {"Demon Shoes", 220, 0, "Devotion: +10 mana/kill", 1},
-    {"Bloodlust Axe", 520, 28, "Bloodlust: 20% spell vamp", 1},
+    {"Bloodlust Axe", 520, 28, "Bloodlust: 20%% spell vamp", 1},
     {"Sea Halberd", 500, 30, "Life Drain: -50%% HP regen", 1}
 };
 
