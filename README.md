@@ -12,6 +12,205 @@
 4. [Soal 4](#soal-4)
 
 ## Soal 1
+### Oleh: Ni'mah Fauziyyah A
+
+### Soal
+``
+Di tahun 2045, dunia mengalami kekacauan siber. Seorang mahasiswa Departemen Teknologi Informasi ITS memiliki misi kembali ke tahun 2025 untuk memanggil hacker legendaris “rootkids”. Petunjuk yang ditemukan dari deep web berupa file teks aneh yang harus didekripsi dan diubah menjadi file JPEG menggunakan sistem RPC berbasis server-client. Sistem ini harus: <br>
+- Men-decrypt file teks (reverse text + decode hex). <br>
+- Menyimpan hasilnya dalam folder server dengan nama file berupa timestamp. <br>
+- Mengirim kembali file hasil ke client menggunakan RPC. <br>
+- Menampilkan menu interaktif pada client. <br>
+- Menjaga agar server tetap berjalan di background (daemon). <br>
+- Menangani semua error dengan baik dan mencatat log aktivitas. <br>
+``
+
+### Jawaban
+#### File terkait:
+`image_server.c` -> Program server daemon <br>
+`image_client.c` -> Program client interaktif <br>
+
+#### A. Download Starter Kit
+Text file rahasia terdapat pada [LINK BERIKUT] (https://drive.google.com/file/d/15mnXpYUimVP1F5Df7qd_Ahbjor3o1cVw/view)
+##### Kode
+```
+void download_and_unzip() {
+    const char *gdrive_link = "https://drive.google.com/uc?export=download&id=15mnXpYUimVP1F5Df7qd_Ahbjor3o1cVw";
+    const char *zip_name = "client/download.zip";
+    const char *extract_dir = "client";
+
+    ensure_directory("client");
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+
+    if (download_file(gdrive_link, zip_name) != 0) {
+        fprintf(stderr, "Failed to download zip file\n");
+        curl_global_cleanup();
+        return;
+    }
+
+    if (extract_zip(zip_name, extract_dir) != 0) {
+        fprintf(stderr, "Failed to extract zip file\n");
+        curl_global_cleanup();
+        return;
+    }
+
+    if (remove(zip_name) != 0) {
+        fprintf(stderr, "Failed to delete zip file: %s\n", strerror(errno));
+    }
+
+    curl_global_cleanup();
+}
+```
+##### Penjelasan
+- Download dan unzip link dari google drive yang berisi file txt ke dalam folder `client`
+
+---
+
+#### B. Implementasi Client-Server menggunakan Socket TCP
+- Menggunakan socket TCP (AF_INET, SOCK_STREAM) untuk komunikasi antara server dan client.
+- Client dan server terhubung melalui IP 127.0.0.1 dan port 8080.
+```
+Penggunaan: ./server/image_server 
+```
+
+##### Kode
+Client (image_client.c) <br>
+```
+sock = socket(AF_INET, SOCK_STREAM, 0);
+server.sin_family = AF_INET;
+server.sin_port = htons(PORT);
+inet_pton(AF_INET, "127.0.0.1", &server.sin_addr);
+connect(sock, (struct sockaddr *)&server, sizeof(server));
+```
+Server (image_server.c) <br>
+```
+server_fd = socket(AF_INET, SOCK_STREAM, 0);
+bind(server_fd, (struct sockaddr *)&address, sizeof(address));
+listen(server_fd, 3);
+new_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen);
+```
+##### Penjelasan
+- Server membuat socket dan menunggu koneksi dari client (`listen` + `accept`).
+- Client membuat socket, lalu melakukan `connect` ke server.
+
+---
+
+#### C. Proses Dekripsi Teks
+- File teks terenkripsi dari file txt yang sudah ter-unzip dan disusun dengan reverse string dan kemudian di-encode dalam format hexadecimal.
+- Server harus membalikkan string lalu mengubah hex menjadi karakter ASCII.
+
+##### Kode
+```
+char* reverse_string(const char* str) {
+    int len = strlen(str);
+    char* rev = malloc(len + 1);
+    for (int i = 0; i < len; i++)
+        rev[i] = str[len - i - 1];
+    rev[len] = '\0';
+    return rev;
+}
+
+char* hex_to_ascii(const char* hex_str) {
+    size_t len = strlen(hex_str);
+    char* result = malloc(len / 2 + 1);
+    for (int i = 0; i < len; i += 2) {
+        sscanf(hex_str + i, "%2hhx", &result[i / 2]);
+    }
+    result[len / 2] = '\0';
+    return result;
+}
+```
+
+##### Penjelasan
+- Fungsi `reverse_string()` membalik isi string.
+- Fungsi `hex_to_ascii()` mengkonversi tiap dua digit hex menjadi satu karakter ASCII.
+---
+
+#### D. Penyimpanan Hasil Decrypt sebagai File JPEG
+- File hasil dekripsi disimpan dalam folder `server/database` dengan nama berupa timestamp (unik).
+- Format file adalah `.jpeg.`
+
+##### Kode
+```
+time_t timestamp = time(NULL);
+snprintf(path, sizeof(path), "server/database/%ld.jpeg", timestamp);
+FILE* img = fopen(path, "w");
+fwrite(decoded, 1, strlen(decoded), img);
+```
+##### Penjelasan
+- `timestamp` digunakan sebagai nama file agar unik dan mencatat waktu file disimpan.
+- File disimpan dalam folder database server.
+---
+
+#### E. Mengirim Kembali File ke Client
+- Client dapat memilih opsi “Download file from server” untuk meminta file berdasarkan nama file.
+- Server akan membuka file .jpeg dan mengirimkan isinya melalui socket.
+
+##### Kode
+Client (image_client.c)
+```
+send(sock, "DOWNLOAD", sizeof("DOWNLOAD"), 0);
+send(sock, filename, sizeof(filename), 0);
+recv(sock, buffer, sizeof(buffer), 0);
+```
+Server (image_server.c)
+```
+if (strcmp(cmd, "DOWNLOAD") == 0) {
+    recv(new_socket, filename, sizeof(filename), 0);
+    FILE* f = fopen(path, "r");
+    fread(buffer, sizeof(char), sizeof(buffer), f);
+    send(new_socket, buffer, strlen(buffer), 0);
+}
+```
+
+##### Penjelasan
+- Client mengirim perintah DOWNLOAD dan nama file ke server.
+- Server membuka file yang diminta dan mengirimkan isinya ke client.
+
+---
+
+#### F. Menjalankan Server sebagai Daemon
+Server dijalankan sebagai daemon agar bisa berjalan di background secara terus-menerus.
+
+##### Kode
+```
+void daemonize() {
+    pid_t pid = fork();
+    if (pid > 0) exit(0); // Parent exit
+    setsid();             // Buat sesi baru
+    pid = fork();
+    if (pid > 0) exit(0); // Exit parent kedua
+    umask(0);
+    chdir("/");
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+}
+```
+##### Penjelasan
+Fungsi `daemonize()` memastikan server tetap berjalan di background bahkan setelah terminal ditutup.
+---
+
+#### G. Logging Aktivitas Server dan Client
+- Semua aktivitas penting dicatat dalam file log `server/server.log`.
+- Format log: `[ROLE][YYYY-MM-DD hh:mm:ss]: [ACTION] [file]`
+##### Kode
+```
+void log_event(const char* role, const char* action, const char* detail) {
+    FILE* log = fopen("server/server.log", "a");
+    time_t t = time(NULL);
+    struct tm* tm_info = localtime(&t);
+    char ts[32];
+    strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", tm_info);
+    fprintf(log, "[%s][%s]: [%s] [%s]\n", role, ts, action, detail);
+    fclose(log);
+}
+```
+##### Penjelasan
+- Setiap kali ada aksi (decrypt, save, download, error), `log_event()` akan dipanggil untuk mencatat kejadian tersebut ke dalam log.
+
+---
 
 ## Soal 2
 
