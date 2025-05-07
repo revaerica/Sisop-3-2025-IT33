@@ -3,9 +3,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 #define PORT 8080
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 8192
 
 const char* RESET = "\x1b[0m";
 const char* RED = "\x1b[31m";
@@ -40,14 +41,14 @@ int main() {
 
     while (1) {
         printf("\n%s╔════════════════════════════════╗%s\n", YELLOW, RESET);
-        printf("%s║ %s🎮 %s== WELCOME TO THE ADVENTURE! == %s🎮  ║%s\n", YELLOW, GREEN, YELLOW, GREEN, RESET);
+        printf("%s║ %s🎮 %sWELCOME TO THE ADVENTURE!%s🎮 ║%s\n", YELLOW, GREEN, YELLOW, GREEN, RESET);
         printf("%s╠════════════════════════════════╣%s\n", YELLOW, RESET);
-        printf("%s║ %s1. Show Stats       %s💥           ║%s\n", GREEN, YELLOW, CYAN, RESET);
-        printf("%s║ %s2. Show Shop        %s🛒           ║%s\n", GREEN, YELLOW, CYAN, RESET);
-        printf("%s║ %s3. Buy Weapon       %s⚔️           ║%s\n", GREEN, YELLOW, CYAN, RESET);
-        printf("%s║ %s4. Inventory & Equip %s🎒          ║%s\n", GREEN, YELLOW, CYAN, RESET);
-        printf("%s║ %s5. Battle           %s🔥           ║%s\n", GREEN, YELLOW, CYAN, RESET);
-        printf("%s║ %s6. Exit             %s🚪           ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s1. Show Stats       %s💥         ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s2. Show Shop        %s🛒         ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s3. Buy Weapon       %s⚔️         ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s4. Inventory & Equip %s🎒        ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s5. Battle           %s🔥         ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s6. Exit             %s🚪         ║%s\n", GREEN, YELLOW, CYAN, RESET);
         printf("%s╚════════════════════════════════╝%s\n", YELLOW, RESET);
 
         printf("%sEnter your choice: %s", GREEN, RESET);
@@ -122,7 +123,7 @@ int main() {
                 printf("%sCanceled.%s\n", YELLOW, RESET);
                 continue;
             }
-            snprintf(buffer, sizeof(buffer), "EQUIP %d", choice - 1);
+            snprintf(buffer, sizeof(buffer), "EQUIP %d", choice);
             if (send(sock, buffer, strlen(buffer), 0) < 0) {
                 perror("Send failed");
                 break;
