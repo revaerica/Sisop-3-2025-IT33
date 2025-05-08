@@ -580,7 +580,7 @@ int main() {
 - Variabel `buffer[]` dan `input[]` digunakan untuk mengirim perintah dan menerima data.
 
 ##### Output
-
+,<img width="959" alt="image" src="https://github.com/user-attachments/assets/eed6e5b4-aeec-4157-9193-7b31b656f367" />
 
 #### b. Sightseeing 
 Anda melihat disekitar dungeon dan menemukan beberapa hal yang menarik seperti toko senjata dan pintu dengan aura yang cukup seram. Ketika player.c dijalankan, ia akan terhubung ke dungeon.c dan menampilkan sebuah main menu.
@@ -618,6 +618,7 @@ Kenapa penting menghapus newline?
 Karena fgets menyimpan newline (\n) saat user menekan Enter. Jika tidak dihapus, perbandingan string seperti strcmp(input, "1") bisa gagal.
 
 ##### Output
+<img width="959" alt="image" src="https://github.com/user-attachments/assets/d042976a-fdcc-4711-b4d4-2c506fb5f79b" />
 
 #### c. Status Check
 Melihat bahwa terdapat sebuah toko senjata, anda mengecek status diri anda dengan harapan anda masih memiliki sisa uang untuk membeli senjata. Jika opsi Show Player Stats dipilih, maka program akan menunjukan Uang yang dimiliki (Jumlah dibebaskan), senjata yang sedang digunakan, Base Damage, dan jumlah musuh yang telah dimusnahkan. 
@@ -674,6 +675,7 @@ Ketika user memilih menu **1. Show Stats**, client (`player.c`) akan:
 - Jika ``recv()`` gagal >> tampilkan ``"Disconnected from server"``
 - 
 ##### Output
+<img width="463" alt="image" src="https://github.com/user-attachments/assets/3cb04098-b3d7-402f-b19d-59172648b631" />
 
 #### d. Weapon Shop
 Ternyata anda memiliki sisa uang dan langsung pergi ke toko senjata tersebut untuk membeli senjata. Terdapat 5 pilihan senjata di toko tersebut dan beberapa dari mereka memiliki passive yang unik. Disaat opsi Shop dipilih, program akan menunjukan senjata apa saja yang dapat dibeli beserta harga, damage, dan juga passive (jika ada). List senjata yang ada dan dapat dibeli beserta logic/command untuk membeli senjata tersebut diletakan di code shop.c yang nanti akan dipakai oleh dungeon.c.
@@ -764,6 +766,9 @@ void displayShop(int client_sock) {
 - Client akan menerima tabel dan langsung mencetaknya di terminal
 
 ##### Output
+<img width="668" alt="image" src="https://github.com/user-attachments/assets/7616de07-ef34-4b59-8591-96ac8855a2a1" />
+
+<img width="716" alt="image" src="https://github.com/user-attachments/assets/7361efe5-3b4d-4545-b91d-d1204043c9c7" />
 
 #### e. Handy Inventory
 Setelah membeli senjata di toko tadi, anda membuka ransel anda untuk memakai senjata tersebut. Jika opsi View Inventory dipilih, program akan menunjukan senjata apa saja yang dimiliki dan dapat dipakai (jika senjata memiliki passive, tunjukan juga passive tersebut). Lalu apabila opsi Show Player Stats dipilih saat menggunakan weapon maka Base Damage player akan berubah dan jika memiliki passive, maka akan ada status tambahan yaitu Passive.
@@ -860,6 +865,9 @@ else if (strcmp(input, "4") == 0) {
 - **Tangani kesalahan** pengiriman atau koneksi dengan `perror()` dan `break`.
 
 ##### Output
+<img width="634" alt="image" src="https://github.com/user-attachments/assets/ec8257a1-8733-4136-bfec-c8471fb71a45" />
+
+<img width="483" alt="image" src="https://github.com/user-attachments/assets/225b5fb1-2706-4c2e-8a0c-56ceb7ef05ab" />
 
 #### f.	Enemy Encounter
 Anda sekarang sudah siap untuk melewati pintu yang seram tadi, disaat anda memasuki pintu tersebut, anda langsung ditemui oleh sebuah musuh yang bukan sebuah manusia. Dengan tekad yang bulat, anda melawan musuh tersebut. Saat opsi Battle Mode dipilih, program akan menunjukan health-bar musuh serta angka yang menunjukan berapa darah musuh tersebut dan menunggu input dengan opsi attack untuk melakukan sebuah serangan dan juga exit untuk keluar dari Battle Mode. Apabila darah musuh berkurang, maka health-bar musuh akan berkurang juga. Jika darah musuh sudah 0, maka program akan menunjukan rewards berupa berapa banyak gold yang didapatkan lalu akan muncul musuh lagi.
@@ -1080,6 +1088,9 @@ else if (strcmp(input, "5") == 0) {
    - Jika pengiriman input pemain ke server gagal, maka loop dihentikan dan pesan error dicetak.
 
 ##### Output
+<img width="349" alt="image" src="https://github.com/user-attachments/assets/88071f69-d889-461a-8346-05e45bee4461" />
+
+<img width="455" alt="image" src="https://github.com/user-attachments/assets/0d0e1733-9789-4f8c-b874-ce961fcc3f3c" />
 
 #### g. Other Battle Logic
 -	**Health & Rewards**
@@ -1122,6 +1133,7 @@ if (enemy_hp <= 0) {
    - `continue;` digunakan untuk mengulang loop pertarungan, kini dengan musuh baru.
 
 ##### Output
+<img width="497" alt="image" src="https://github.com/user-attachments/assets/0e5858fd-5570-4348-808a-09db1f264e9a" />
 
 -	**Damage Equation**
 Untuk damage, gunakan base damage sebagai kerangka awal dan tambahkan rumus damage apapun (dibebaskan, yang pasti perlu random number agar hasil damage bervariasi). Lalu buatlah logic agar setiap serangan memiliki kesempatan untuk Critical yang membuat damage anda 2x lebih besar.
@@ -1147,6 +1159,7 @@ void handleBattle(int client_sock, Player *p) {
 - `snprintf(...)` dan `send(...)`: Mengirimkan pesan `"Critical Hit!"` ke client, dengan teks berwarna merah (menggunakan `RED` dan `RESET`).
 
 ##### Output
+<img width="497" alt="image" src="https://github.com/user-attachments/assets/3713548a-be26-431c-ad79-a890a93b4a38" />
 
 -	**Passive**
 Jika senjata yang dipakai memiliki Passive setiap kali passive tersebut menyala, maka tunjukan bahwa passive tersebut aktif.
@@ -1238,7 +1251,6 @@ else {
             snprintf(buffer, sizeof(buffer), "%sInvalid option. Use 'attack' or 'exit'.%s\n", RED, RESET);
             send(client_sock, buffer, strlen(buffer), 0); }
 ```
-###### Output
 
 ###### Error Handling saat Memilih Weapon, Kekurangan Gold, Inventory Full, Pembelian yang tidak berhasil, dan Unknown Command 
 ```
@@ -1259,7 +1271,6 @@ void* handlePlayer(void* arg) {
             snprintf(buffer, sizeof(buffer), "%s❓ Unknown command.%s\n", RED, RESET);
             send(client_sock, buffer, strlen(buffer), 0);}
 ```
-###### Output
 
 ###### Error Handling saat Meemilih Menu
 ```
@@ -1272,6 +1283,9 @@ else {
 ....
 ```
 ###### Output
+<img width="445" alt="image" src="https://github.com/user-attachments/assets/04697f19-ed76-459b-9800-764db0e667df" />
+
+<img width="665" alt="image" src="https://github.com/user-attachments/assets/0490f8ce-6c4a-4eed-b959-50eb31b7abd5" />
 
 ## Soal 4
 ### Oleh: Revalina Erica Permatasari
@@ -1555,6 +1569,12 @@ Fungsi ini digunakan untuk menampilkan daftar semua hunter yang terdaftar dalam 
 - Berguna untuk admin atau pengguna yang ingin melihat status seluruh pemain.
 
 ##### Output
+<img width="361" alt="image" src="https://github.com/user-attachments/assets/4b302b65-122c-4bfc-85cb-c2f60179fbf9" />
+
+<img width="254" alt="image" src="https://github.com/user-attachments/assets/4bc7b943-5fde-4859-a99e-8ea74a488fe8" />
+
+<img width="352" alt="image" src="https://github.com/user-attachments/assets/25b76863-5813-4104-be14-7d3f0d9cf311" />
+
 
 #### d. Sung jin Woo memutuskan untuk membuat fitur unik dalam sistem yang dapat menghasilkan dungeon secara random dengan nama, level minimal hunter, dan stat rewards dengan nilai:
 -	🏆Level Minimal : 1 - 5
@@ -1612,10 +1632,8 @@ Fungsi ini bertanggung jawab untuk membuat dungeon baru secara dinamis dan menyi
   - `shmget` digunakan untuk membuat shared memory berukuran 128 byte untuk dungeon, dengan permission `IPC_CREAT | 0666`.
   - Jika gagal, program akan mencetak error dan keluar (`exit(1)`).
 
-- **Output**
-  - Jika berhasil, mencetak nama dungeon dan key shared memory yang digunakan.
-
 ##### Output
+<img width="650" alt="image" src="https://github.com/user-attachments/assets/0975a3ca-0825-4da7-a15e-aaf9092320ab" />
 
 #### e. Sung Jin Woo menambahkan fitur yang menampilkan informasi detail semua dungeon. Fitur ini menampilkan daftar lengkap dungeon beserta nama, level minimum, reward (EXP, ATK, HP, DEF), dan key unik untuk masing-masing dungeon.
 ##### Code
@@ -1654,8 +1672,8 @@ Fungsi ini digunakan untuk menampilkan daftar dungeon yang tersedia dalam sistem
     - `EXP`: Experience yang diberikan setelah mengalahkan dungeon
     - `KEY`: `shm_key` (key shared memory) yang digunakan oleh dungeon tersebut
 
-
 ##### Output
+<img width="586" alt="image" src="https://github.com/user-attachments/assets/767fdc12-ddc6-4a19-97e1-c37884d9809d" />
 
 #### f. Pada saat yang sama, dungeon yang dibuat oleh sistem juga harus dapat diakses oleh hunter. Sung Jin Woo menambahkan fitur yang menampilkan semua dungeon yang tersedia sesuai dengan level hunter. Disini, hunter hanya dapat menampilkan dungeon dengan level minimum yang sesuai dengan level mereka.
 ##### Code
@@ -1700,6 +1718,7 @@ void showDungeon(struct Hunter *hunter, struct SystemData *sys) {
   - Jika tidak ada dungeon yang sesuai dengan level hunter, akan menampilkan pesan `"No dungeons available for your level."` di dalam tabel.
 
 ##### Output
+<img width="595" alt="image" src="https://github.com/user-attachments/assets/e33780fc-dd77-4365-be24-b1aa864d43a8" />
 
 #### g. Sung Jin Woo memutuskan untuk menambahkan fitur untuk menguasai dungeon. Ketika hunter berhasil menaklukan sebuah dungeon, dungeon tersebut akan menghilang dari sistem dan hunter akan mendapatkan stat rewards dari dungeon. Jika exp hunter mencapai 500, mereka akan naik level dan exp kembali ke 0.
 ##### Code
