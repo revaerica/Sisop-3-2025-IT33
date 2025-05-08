@@ -216,7 +216,7 @@ Program client-server `image_client.c` dan `image_server.c` berhasil membentuk s
 - Menyimpan hasil dekripsi dalam bentuk file `.jpeg` di server.
 - Memungkinkan client untuk mengunduh file hasil dekripsi dari server melalui menu interaktif.
 - Mencatat semua aktivitas ke dalam log `server.log` dengan format yang konsisten.
-- Menangani kesalahan seperti koneksi gagal, file tidak ditemukan, dan error pada dekripsi.
+- Menangani kesalahan seperti koneksi gagal, file tidak ditemukan, dan error pada dekripsi. <br>
 Dengan keberhasilan sistem ini, client dapat mengakses dan mengungkap isi pesan rahasia dari masa lalu untuk melacak keberadaan hacker legendaris “rootkids”. Sistem juga dirancang agar robust, modular, dan dapat digunakan secara berulang dengan proses yang otomatis maupun manual sesuai kebutuhan skenario.
 ---
 
