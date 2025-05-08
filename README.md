@@ -12,7 +12,7 @@
 4. [Soal 4](#soal-4)
 
 ## Soal 1
-### Oleh: Ni'mah Fauziyyah A
+### Oleh: Ni'mah Fauziyyah A (5027241103)
 
 ### Soal
 Di tahun 2045, dunia mengalami kekacauan siber. Seorang mahasiswa Departemen Teknologi Informasi ITS memiliki misi kembali ke tahun 2025 untuk memanggil hacker legendaris “rootkids”. Petunjuk yang ditemukan dari deep web berupa file teks aneh yang harus didekripsi dan diubah menjadi file JPEG menggunakan sistem RPC berbasis server-client. Sistem ini harus: <br>
@@ -214,7 +214,7 @@ void log_event(const char* role, const char* action, const char* detail) {
 ## Soal 2
 
 ## Soal 3
-### Oleh: Revalina Erica Permatasari
+### Oleh: Revalina Erica Permatasari (5027241007)
 #### a. Entering the dungeon
 dungeon.c akan bekerja sebagai server yang dimana client (player.c) dapat terhubung melalui RPC. dungeon.c akan memproses segala perintah yang dikirim oleh player.c. Lebih dari 1 client dapat mengakses server.
 ##### Code
