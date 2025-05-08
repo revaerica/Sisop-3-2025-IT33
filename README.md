@@ -15,7 +15,6 @@
 ### Oleh: Ni'mah Fauziyyah A
 
 ### Soal
-``
 Di tahun 2045, dunia mengalami kekacauan siber. Seorang mahasiswa Departemen Teknologi Informasi ITS memiliki misi kembali ke tahun 2025 untuk memanggil hacker legendaris “rootkids”. Petunjuk yang ditemukan dari deep web berupa file teks aneh yang harus didekripsi dan diubah menjadi file JPEG menggunakan sistem RPC berbasis server-client. Sistem ini harus: <br>
 - Men-decrypt file teks (reverse text + decode hex). <br>
 - Menyimpan hasilnya dalam folder server dengan nama file berupa timestamp. <br>
@@ -23,7 +22,6 @@ Di tahun 2045, dunia mengalami kekacauan siber. Seorang mahasiswa Departemen Tek
 - Menampilkan menu interaktif pada client. <br>
 - Menjaga agar server tetap berjalan di background (daemon). <br>
 - Menangani semua error dengan baik dan mencatat log aktivitas. <br>
-``
 
 ### Jawaban
 #### File terkait:
@@ -190,6 +188,7 @@ void daemonize() {
 ```
 ##### Penjelasan
 Fungsi `daemonize()` memastikan server tetap berjalan di background bahkan setelah terminal ditutup.
+
 ---
 
 #### G. Logging Aktivitas Server dan Client
