@@ -506,7 +506,6 @@ int main() {
 6. **Mendengarkan Koneksi Client**
    - `listen(..., 5);`  
      Server siap menerima hingga 5 koneksi pending.
-
 7. **Mencetak Status Server**
    - Menampilkan log bahwa server aktif di terminal.
 8. **Loop Accept Client**
