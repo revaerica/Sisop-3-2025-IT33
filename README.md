@@ -342,7 +342,7 @@ if (strcmp(argv[1], "-list") == 0) {
 
 ---
 
-#### Kesimpulan
+#### F. Kesimpulan
 Dengan implementasi dua program utama `delivery_agent` dan `dispatcher`, sistem Delivery Management RushGo dapat menangani pengiriman express secara otomatis oleh agen, dan reguler secara manual oleh user. Shared memory digunakan sebagai penyimpanan bersama antara agent dan dispatcher, serta semua aktivitas dicatat pada `delivery.log`.
 
 ## Soal 3
