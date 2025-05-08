@@ -959,7 +959,13 @@ void* handlePlayer(void* arg) {
 ```
 ###### Error Handling saat Meemilih Menu
 ```
-
+int main () {
+....
+else {
+            printf("%sInvalid option. Please select 1–6.%s\n", RED, RESET);
+            continue;
+        }
+....
 ```
 
 ##### Output
