@@ -568,7 +568,7 @@ int main() {
    - `connect(sock, (struct sockaddr *)&server, ...)`  
      Menghubungkan socket client ke socket server dungeon
 4. **Menangani Gagal Koneksi**
-   - Jika gagal konek (server belum aktif), tampilkan pesan error:
+   - Jika gagal connect (server belum aktif), tampilkan pesan error:
      ```
      Connect failed: Connection refused
      ```
@@ -607,6 +607,15 @@ while (1) {
         input[strcspn(input, "\n")] = 0;
 .....}
 ```
+- Menampilkan **menu utama** kepada pemain
+- Menerima input user
+- Mengirim perintah sesuai pilihan ke server (`dungeon.c`)
+- Berjalan terus-menerus selama pemain belum memilih Exit
+- ``while (1)`` >> loop tak terbatas agar menu terus muncul
+- ``fgets(input, BUFFER_SIZE, stdin)`` >> membaca input dari user
+- ``input[strcspn(input, "\n")] = 0;`` >> menghapus \n (newline) dari input
+Kenapa penting menghapus newline?
+Karena fgets menyimpan newline (\n) saat user menekan Enter. Jika tidak dihapus, perbandingan string seperti strcmp(input, "1") bisa gagal.
 
 ##### Output
 
@@ -637,6 +646,7 @@ void showStats(int client_sock, Player *p) {
     send(client_sock, buffer, strlen(buffer), 0);
 }
 ```
+Fungsi ini dipanggil dari ``dungeon.c`` saat server menerima perintah ``"STATS"`` dari client.
 
 ``player.c``
 ```
@@ -650,7 +660,19 @@ if (strcmp(input, "1") == 0) {
 .......
 }
 ```
+Ketika user memilih menu **1. Show Stats**, client (`player.c`) akan:
+1. Mengirim perintah `"STATS"` ke server (`dungeon.c`)
+2. Menerima respon berupa status lengkap dari server
+3. Menampilkannya di terminal player
 
+- User pilih "1" >> ``strcmp(input, "1") == 0``
+- Kirim perintah >> ``send(sock, "STATS", ...)``
+- Tunggu respon server >> ``recv(sock, buffer, ...)``
+- Tampilkan isi buffer: status player
+- Server (dungeon.c) akan memanggil ``showStats(client_sock, player);`` yang akan menampilkan Gold, weapon, Base Damage, Passive, dan Jumlah musuh yang dikalahkan.
+- Jika ``send()`` gagal >> tampilkan ``"Send failed"`` dan keluar
+- Jika ``recv()`` gagal >> tampilkan ``"Disconnected from server"``
+- 
 ##### Output
 
 #### d. Weapon Shop
@@ -690,6 +712,11 @@ Weapon* buyWeapon(int choice, Player *p) {
     return selected;
 }
 ```
+- Validasi pilihan senjata (harus 1–MAX_WEAPONS)
+- Cek apakah gold mencukupi
+- Cek apakah inventory penuh
+- Jika valid, maka akan mengurangi gold player, menambahkan senjata ke inventory, dan mengembalikan pointer ke senjata yang dibeli
+- Fungsi buyWeapon() akan mengembalikan NULL jika ID senjata tidak valid, uang tidak cukup, dan inventory penuh
 
 ``dungeon.c``
 ```
@@ -731,6 +758,10 @@ void displayShop(int client_sock) {
     send(client_sock, buffer, strlen(buffer), 0);
 }
 ```
+- Passive panjang dipotong menjadi 2 baris agar rapi saat ditampilkan.
+- Seluruh tabel dikirim ke client sekaligus menggunakan send().
+- Fungsi ini dipanggil di ``dungeon.c`` saat perintah ``"SHOP"`` diterima dari client (``player.c``).
+- Client akan menerima tabel dan langsung mencetaknya di terminal
 
 ##### Output
 
@@ -778,6 +809,11 @@ void showInvent(int client_sock, Player *p) {
     send(client_sock, buffer, strlen(buffer), 0);
 }
 ```
+- Passive yang lebih dari 40 karakter akan dipotong menjadi 2 baris agar rapi.
+- ``strncpy()`` untuk memotong passive.
+- Baris hasil ``snprintf()`` disatukan ke buffer lalu dikirim via send() ke client.
+- Fungsi ini dipanggil di ``dungeon.c`` saat server menerima perintah ``"INVENTORY"`` dari client (``player.c``).
+- Setelah tampilan muncul, client biasanya akan diminta memilih senjata untuk di-equip.
 
 ``player.c``
 ```
@@ -813,6 +849,15 @@ else if (strcmp(input, "4") == 0) {
                 break;
             }
 ```
+- **Cek input** apakah `"4"`, jika ya, jalankan fitur ini.
+- **Kirim perintah `INVENTORY`** ke server melalui socket.
+- **Terima daftar inventory** dari server dan tampilkan ke layar.
+- **Minta user memilih Weapon ID**, dengan opsi `0` untuk batal.
+- **Validasi input**:
+  - Harus berupa angka ≥ 0.
+  - Jika `0`, tampilkan pesan batal dan kembali ke menu.
+- **Kirim perintah `EQUIP <ID>`** ke server jika input valid.
+- **Tangani kesalahan** pengiriman atau koneksi dengan `perror()` dan `break`.
 
 ##### Output
 
@@ -939,6 +984,44 @@ void handleBattle(int client_sock, Player *p) {
     }
 }
 ```
+Fungsi `handleBattle(int client_sock, Player *p)` digunakan untuk menangani pertempuran antara pemain dan musuh secara real-time melalui koneksi socket.
+
+- Inisialisasi:
+  - `enemy_hp` di-random antara 50–200.
+  - `player_hp` diset ke 100.
+- Loop berjalan selama kedua HP masih di atas 0.
+- Menampilkan UI battle:
+  - HP musuh divisualisasikan dalam bentuk health bar `#`.
+  - Menampilkan opsi: `attack` atau `exit`.
+
+**Input dari Client**
+- Program membaca input client (`recv`):
+  - Jika `"exit"` → keluar dari pertempuran, HP musuh di-reset.
+  - Jika `"attack"` → pemain menyerang musuh.
+  - Input lain → pesan error dikirim ke client.
+
+**Mekanisme Serangan Pemain**
+- Damage ditentukan oleh:
+  - Jika memiliki senjata: `baseDamage` senjata + `rand() % 10`.
+  - Jika tidak memiliki senjata: default 5 + `rand() % 10`.
+- 20% peluang terkena Critical Hit yang menggandakan damage.
+
+**Update Status**
+- Musuh menerima damage dari serangan dan passive.
+- Jika `enemy_hp <= 0`:
+  - Pemain mendapatkan gold (50–100).
+  - Jumlah `enemiesDefeated` bertambah.
+  - Musuh baru akan muncul (HP di-random ulang).
+- Jika musuh belum mati:
+  - Musuh menyerang balik dengan damage 5–15.
+  - Jika `player_hp <= 0`, kirim pesan kekalahan.
+
+**Alur Singkat**
+1. Server mengirim status HP musuh dan pemain.
+2. Client mengirim input `"attack"` atau `"exit"`.
+3. Server memproses input dan mengirimkan hasilnya.
+4. Loop berulang hingga musuh atau pemain kalah, atau user keluar.
+
 
 ``player.c``
 ```
@@ -972,6 +1055,29 @@ else if (strcmp(input, "5") == 0) {
             continue;
 ....}
 ```
+1. **Kirim Perintah Battle**
+   - Saat input `"5"` diterima, client mengirim string `"BATTLE"` ke server untuk memulai sesi pertarungan.
+   - Jika pengiriman gagal, akan keluar dari blok dengan mencetak error.
+
+2. **Loop Pertarungan**
+   - Memasuki loop `while (1)` untuk terus menerima update dari server selama pertarungan berlangsung.
+   - Buffer dikosongkan dan client menunggu respon dari server dengan `recv()`.
+
+3. **Cek Koneksi**
+   - Jika `recv()` mengembalikan nilai kurang dari atau sama dengan 0, artinya koneksi terputus, maka client mencetak pesan "Disconnected from server" dan keluar dari loop.
+
+4. **Tampilkan Respon Server**
+   - Isi dari buffer ditampilkan ke layar (misalnya informasi HP musuh, pilihan aksi, dll).
+
+5. **Cek Akhir Pertarungan**
+   - Jika respon dari server mengandung kata `"defeated"` (musuh kalah) atau `"exited"` (pemain keluar dari pertarungan), maka loop berakhir.
+
+6. **Ambil Input Pemain**
+   - Jika pertarungan masih berlangsung, client meminta pemain memasukkan aksi (contohnya `"attack"` atau `"exit"`).
+   - Input dibersihkan dari newline dan dikirim kembali ke server untuk diproses.
+
+7. **Error Handling**
+   - Jika pengiriman input pemain ke server gagal, maka loop dihentikan dan pesan error dicetak.
 
 ##### Output
 
