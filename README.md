@@ -193,7 +193,7 @@ Fungsi `daemonize()` memastikan server tetap berjalan di background bahkan setel
 
 #### G. Logging Aktivitas Server dan Client
 - Semua aktivitas penting dicatat dalam file log `server/server.log`.
-- Format log: `[ROLE][YYYY-MM-DD hh:mm:ss]: [ACTION] [file]`
+- Format log: `[Source][YYYY-MM-DD hh:mm:ss]: [ACTION] [Info]`
 ##### Kode
 ```
 void log_event(const char* role, const char* action, const char* detail) {
