@@ -1100,6 +1100,26 @@ if (enemy_hp <= 0) {
                 continue;
             }
 ```
+1. **Cek Kondisi Musuh**
+   - Jika `enemy_hp <= 0`, artinya musuh telah dikalahkan oleh pemain.
+
+2. **Hitung Hadiah (Gold)**
+   - Pemain akan menerima hadiah berupa gold.
+   - Nilai gold dihitung secara acak dengan `rand() % 51 + 50`, menghasilkan angka antara 50 hingga 100.
+
+3. **Update Status Pemain**
+   - Total gold milik pemain (`p->gold`) ditambah dengan reward tersebut.
+   - Counter `p->enemiesDefeated` juga ditingkatkan sebanyak 1.
+
+4. **Kirim Feedback ke Client**
+   - Server membuat string feedback berisi pesan bahwa musuh telah dikalahkan dan gold yang diperoleh.
+   - Pesan ini dikirim ke client melalui `send()`.
+
+5. **Respawn Musuh Baru**
+   - Setelah musuh dikalahkan, server langsung membuat musuh baru dengan HP baru yang diacak dari 50 hingga 200 menggunakan `rand() % 151 + 50`.
+
+6. **Lanjutkan Pertarungan**
+   - `continue;` digunakan untuk mengulang loop pertarungan, kini dengan musuh baru.
 
 ##### Output
 
@@ -1119,6 +1139,12 @@ void handleBattle(int client_sock, Player *p) {
                 send(client_sock, buffer, strlen(buffer), 0);
             }
 ```
+- `strcmp(buffer, "attack") == 0`: Mengecek apakah input dari client adalah `"attack"`.
+- `p->hasWeapon ? p->baseDamage : 5`: Jika pemain memiliki senjata, gunakan `baseDamage`. Jika tidak, gunakan nilai default 5.
+- `rand() % 10`: Menambahkan variasi damage secara acak antara 0 sampai 9.
+- `rand() % 100 < 20`: Memberikan 20% peluang untuk critical hit (angka 0–19 dari 100).
+- `damage *= 2`: Jika critical, damage dikalikan dua.
+- `snprintf(...)` dan `send(...)`: Mengirimkan pesan `"Critical Hit!"` ke client, dengan teks berwarna merah (menggunakan `RED` dan `RESET`).
 
 ##### Output
 
@@ -1168,6 +1194,35 @@ int passive_triggered = 0;
                 }
             }
 ```
+Jika pemain memiliki senjata yang memiliki efek passive (`hasPassive == true`), maka sistem akan memeriksa jenis efek passive yang dimiliki dan mencoba mengaktifkannya berdasarkan kondisi tertentu
+- **Burn: 10% chance to deal 2x damage**  
+  - Peluang 10% untuk menggandakan damage.
+  - Jika aktif, damage dikalikan dua dan pesan dikirim ke client.
+
+- **Poison: Deals 5 damage per turn**  
+  - Menambahkan 5 damage langsung ke musuh setiap giliran.
+  - Selalu aktif saat senjata digunakan.
+
+- **Shock: 20% chance to chain attack**  
+  - Peluang 20% untuk men-trigger "chained attack".
+  - Memberikan tambahan damage acak (antara 5–14) ke musuh.
+
+- **Execute: Auto-kill enemies <20% HP**  
+  - Jika HP musuh di bawah 20% (dalam kasus ini diasumsikan <40 dari 200), langsung membunuh musuh.
+
+- **Despair: +25% damage to enemies <50% HP**  
+  - Jika HP musuh kurang dari 50% (diasumsikan <100), damage saat ini ditingkatkan sebesar 25%.
+
+- **Wind Chant: Immune to phys damage (2s)**  
+  - Mengaktifkan status kekebalan terhadap serangan fisik selama 2 detik (efek ini perlu ditangani dalam sistem pertahanan, bukan langsung memengaruhi damage).
+
+- **Bloodlust: 20% spell vamp**  
+  - Pemain menyembuhkan diri sebesar 20% dari damage yang diberikan ke musuh.
+
+- **Life Drain: -50% HP regen**  
+  - Menambahkan damage tambahan sebesar 10 ke musuh, mengasumsikan ini merepresentasikan pengurangan regenerasi HP musuh.
+
+Setiap efek passive dikirimkan sebagai notifikasi ke client dengan warna khusus (menggunakan `MAGENTA`), untuk memberi feedback visual saat passive aktif.
 
 ##### Output
 
@@ -1183,6 +1238,8 @@ else {
             snprintf(buffer, sizeof(buffer), "%sInvalid option. Use 'attack' or 'exit'.%s\n", RED, RESET);
             send(client_sock, buffer, strlen(buffer), 0); }
 ```
+###### Output
+
 ###### Error Handling saat Memilih Weapon, Kekurangan Gold, Inventory Full, Pembelian yang tidak berhasil, dan Unknown Command 
 ```
 void* handlePlayer(void* arg) {
@@ -1202,6 +1259,8 @@ void* handlePlayer(void* arg) {
             snprintf(buffer, sizeof(buffer), "%s❓ Unknown command.%s\n", RED, RESET);
             send(client_sock, buffer, strlen(buffer), 0);}
 ```
+###### Output
+
 ###### Error Handling saat Meemilih Menu
 ```
 int main () {
@@ -1212,8 +1271,7 @@ else {
         }
 ....
 ```
-
-##### Output
+###### Output
 
 ## Soal 4
 ### Oleh: Revalina Erica Permatasari
@@ -1329,6 +1387,38 @@ void hunterRegister(struct SystemData *sys) {
     printf("Registration succeeded.\n");
 }
 ```
+- **Cek Jumlah Maksimum Hunter**  
+  - Jika jumlah hunter sudah mencapai `MAX_HUNTERS`, pendaftaran dibatalkan dengan menampilkan pesan error.
+
+- **Input Username**  
+  - Mengambil input username dari pengguna melalui `scanf`.
+
+- **Inisialisasi Awal Hunter**  
+  - Level = 1
+  - EXP = 0
+  - ATK = 10
+  - HP = 100
+  - DEF = 5
+  - Banned = 0
+  - `shm_key` diisi dengan nilai acak (`rand()`) yang nantinya digunakan sebagai key untuk shared memory.
+
+- **Pembuatan Shared Memory Segment**  
+  - Menggunakan `shmget` untuk membuat shared memory berukuran `sizeof(struct Hunter)` dengan key `shm_key`.
+  - Jika gagal, akan menampilkan error dan membatalkan proses registrasi.
+
+- **Menulis ke Shared Memory**  
+  - `shmat` digunakan untuk attach ke shared memory.
+  - Data hunter yang telah diisi ditulis ke shared memory melalui pointer `h_ptr`.
+  - Setelah selesai, pointer di-detach dengan `shmdt`.
+
+- **Menambahkan ke Sistem**  
+  - Hunter yang telah dibuat ditambahkan ke array `sys->hunters`.
+  - `num_hunters` ditambah 1.
+
+- **Output Sukses**  
+  - Menampilkan pesan `"Registration succeeded."` jika semua langkah berhasil.
+
+Fungsi ini kombinasi antara array data struktural dan pemanfaatan shared memory (`SysV IPC`) untuk komunikasi atau sinkronisasi data antar proses.
 
 ```
 void login(struct SystemData *sys) {
@@ -1384,6 +1474,40 @@ void login(struct SystemData *sys) {
     printf("Hunter not found.\n");
 }
 ```
+- **Input Username**  
+  - Meminta pemain memasukkan nama hunter.
+  - Username dibaca dan disimpan dalam variabel lokal `username`.
+
+- **Pencarian Hunter**  
+  - Sistem mencari hunter yang cocok dalam array `sys->hunters` dengan membandingkan `username` menggunakan `strcmp`.
+
+- **Jika Hunter Ditemukan**:
+  - Menyimpan pointer `current` ke hunter yang sedang login.
+  - Menyimpan pointer global (`hunter_global`, `sys_global`) untuk digunakan di fungsi lain.
+  - Menampilkan menu utama yang bisa dipilih oleh hunter:
+
+**Menu Hunter**
+1. **Show Dungeon**  
+   - Menampilkan daftar dungeon dengan memanggil `showDungeon`.
+
+2. **Dungeon Raid**  
+   - Memasuki dungeon dan memulai raid dengan `dungeonRaid`.
+
+3. **Battle**  
+   - Memulai pertarungan menggunakan fungsi `battle`.
+
+4. **Toggle Notification [ON/OFF]**  
+   - Menyalakan atau mematikan notifikasi dungeon:
+     - Jika OFF, akan membuat thread notifikasi `notifDungeon`.
+     - Jika ON, thread akan dihentikan menggunakan `pthread_join`.
+
+5. **Logout**  
+   - Keluar dari sesi hunter saat ini.
+   - Jika notifikasi aktif, thread notifikasi dihentikan lebih dulu.
+
+- **Jika Hunter Tidak Ditemukan**:
+  - Menampilkan pesan `"Hunter not found."`
+
 ##### Output
 <img width="365" alt="image" src="https://github.com/user-attachments/assets/89c8947b-27a1-4d90-8046-43c2ca7df01f" />
 
@@ -1407,6 +1531,28 @@ void showHunter() {
         printf("=================================================================\n");
 }
 ```
+Fungsi ini digunakan untuk menampilkan daftar semua hunter yang terdaftar dalam sistem, lengkap dengan status dan statistik dasar mereka.
+
+- **Header Tabel**  
+  - Menampilkan garis pembatas dan judul tabel `Hunter List` dengan format warna biru (menggunakan ANSI escape code `\033[1;34m`).
+
+- **Kolom yang Ditampilkan**  
+  - `Name`: Username hunter
+  - `LVL`: Level hunter
+  - `EXP`: Jumlah experience
+  - `ATK`: Attack power
+  - `HP`: Health points
+  - `DEF`: Defense
+  - `STATUS`: Menampilkan `"BANNED"` jika hunter diblokir (`banned == 1`), atau `"ACTIVE"` jika masih aktif.
+
+- **Looping Hunter**  
+  - Melakukan iterasi dari `0` hingga `sys->num_hunters` untuk mencetak setiap hunter di sistem.
+
+- **Format Output**  
+  - Menggunakan padding dan alignment agar tabel tetap rapi di tampilan terminal.
+
+- Fungsi ini bersifat read-only, tidak memodifikasi data apapun.
+- Berguna untuk admin atau pengguna yang ingin melihat status seluruh pemain.
 
 ##### Output
 
@@ -1443,6 +1589,31 @@ void createDungeon() {
     printf("Dungeon %s created with shm_key %d.\n", d->name, dungeon_key);
 }
 ```
+Fungsi ini bertanggung jawab untuk membuat dungeon baru secara dinamis dan menyimpannya ke dalam array `sys->dungeons`. Fungsi ini memungkinkan sistem untuk menghasilkan dungeon secara otomatis dan menyimpannya dalam shared memory, sehingga bisa diakses oleh proses lain seperti notifikasi atau pertarungan.
+
+- **Batas Maksimum Dungeon**  
+  - Jika jumlah dungeon saat ini sudah mencapai `MAX_DUNGEONS`, maka fungsi langsung keluar.
+
+- **Inisialisasi Dungeon Baru**
+  - Dungeon baru ditambahkan ke array `sys->dungeons` dan pointer lokal `d` digunakan untuk referensi dungeon tersebut.
+  - Properti dungeon diisi secara acak:
+    - `name`: Nama dungeon dengan format `Dungeon-<angka acak>`
+    - `min_level`: Level minimum pemain yang boleh masuk (1–5)
+    - `atk`: Attack musuh dalam dungeon (100–150)
+    - `hp`: HP musuh (50–100)
+    - `def`: Defense musuh (25–50)
+    - `exp`: EXP yang diberikan jika dungeon dikalahkan (150–300)
+
+- **Key Shared Memory (`shm_key`)**
+  - Menggunakan `ftok(".", rand() % 100 + 1)` untuk menghasilkan key unik dari file saat ini dan ID acak.
+  - Key ini disimpan ke properti `d->shm_key`.
+
+- **Pembuatan Shared Memory**
+  - `shmget` digunakan untuk membuat shared memory berukuran 128 byte untuk dungeon, dengan permission `IPC_CREAT | 0666`.
+  - Jika gagal, program akan mencetak error dan keluar (`exit(1)`).
+
+- **Output**
+  - Jika berhasil, mencetak nama dungeon dan key shared memory yang digunakan.
 
 ##### Output
 
@@ -1463,6 +1634,26 @@ void showDungeon() {
         printf("==========================================================================\n");   
 }
 ```
+Fungsi ini digunakan untuk menampilkan daftar dungeon yang tersedia dalam sistem, lengkap dengan statistik dan informasi shared memory-nya.
+
+- **Header Tabel**
+  - Menampilkan judul `"Dungeon List"` dengan warna ungu (`\033[1;35m`) dan garis pembatas.
+  - Menyusun tabel kolom: `Name`, `LVL`, `ATK`, `HP`, `DEF`, `EXP`, dan `KEY`.
+
+- **Looping Dungeon**
+  - Melakukan iterasi dari `0` sampai `sys->num_dungeons` untuk mencetak detail setiap dungeon yang telah dibuat menggunakan `createDungeon()`.
+
+- **Format Tabel**
+  - Menggunakan alignment agar tampilan tetap rapi di terminal.
+  - Menampilkan informasi dungeon:
+    - `Name`: Nama dungeon
+    - `LVL`: Minimum level hunter untuk masuk
+    - `ATK`: Attack musuh
+    - `HP`: Health musuh
+    - `DEF`: Defense musuh
+    - `EXP`: Experience yang diberikan setelah mengalahkan dungeon
+    - `KEY`: `shm_key` (key shared memory) yang digunakan oleh dungeon tersebut
+
 
 ##### Output
 
@@ -1490,6 +1681,23 @@ void showDungeon(struct Hunter *hunter, struct SystemData *sys) {
     printf("==========================================================================\n");
 }
 ```
+- **Header Tabel**  
+  - Menampilkan judul `"Dungeon List for <username> (Lv <level>)"` dengan warna ungu (`\033[1;35m`) untuk menunjukkan bahwa daftar dungeon ini spesifik untuk hunter yang sedang login, dan menyertakan level hunter.
+
+- **Looping Dungeon**  
+  - Fungsi memeriksa semua dungeon yang terdaftar dalam `sys->dungeons`.
+  - Hanya dungeon yang memiliki level minimum (`d.min_level`) yang lebih rendah atau sama dengan level hunter yang akan ditampilkan.
+  - Untuk setiap dungeon yang memenuhi syarat, detailnya akan dicetak dalam tabel dengan kolom:
+    - `Name`: Nama dungeon
+    - `LVL`: Level minimum yang dibutuhkan untuk dungeon
+    - `ATK`: Attack musuh dalam dungeon
+    - `HP`: Health musuh dalam dungeon
+    - `DEF`: Defense musuh dalam dungeon
+    - `EXP`: Experience yang diberikan setelah dungeon dikalahkan
+    - `KEY`: `shm_key` yang digunakan untuk dungeon
+
+- **Jika Tidak Ada Dungeon yang Cocok**  
+  - Jika tidak ada dungeon yang sesuai dengan level hunter, akan menampilkan pesan `"No dungeons available for your level."` di dalam tabel.
 
 ##### Output
 
@@ -1541,6 +1749,20 @@ int totalStat(struct Hunter *h) {
     return h->atk + h->hp + h->def;
 }
 ```
+Fungsi ini memungkinkan hunter untuk melakukan raid dungeon, meningkatkan statistik hunter, dan menghapus dungeon yang telah diselesaikan.
+- **Cek Status Hunter**: Jika hunter dibanned, keluar dari fungsi.
+- **Input Nama Dungeon**: Meminta input nama dungeon yang ingin diraih.
+- **Pencarian Dungeon**: Mencari dungeon berdasarkan nama yang dimasukkan.
+- **Cek Level Hunter**: Jika level hunter kurang dari level minimal dungeon, raid dibatalkan.
+- **Proses Raid**:
+  - Menambah statistik hunter (atk, hp, def, exp).
+  - Jika EXP >= 500, hunter naik level.
+- **Hapus Dungeon**: Dungeon yang telah diraih dihapus dari daftar.
+- **Pesan Output**: Menampilkan pesan sesuai hasil raid (berhasil atau gagal).
+
+`totalStat()`
+- **Menghitung Statistik**: Menjumlahkan nilai `atk + hp + def`.
+- **Output**: Mengembalikan hasil penjumlahan sebagai total statistik hunter.
 
 ##### Output
 
@@ -1631,6 +1853,59 @@ void battle(struct SystemData *sys, struct Hunter *self) {
     }
 }
 ```
+Fungsi `battle` digunakan dalam game untuk memungkinkan seorang hunter (`self`) menantang hunter lain dalam sistem (`sys`) dan melakukan pertarungan. Fungsi ini mencakup validasi, perhitungan statistik, hasil pertarungan, serta manipulasi data hunter dalam sistem.
+- `struct SystemData *sys`: Struktur yang menyimpan seluruh data sistem, termasuk daftar hunter dan jumlahnya (`num_hunters`).
+- `struct Hunter *self`: Pointer ke hunter yang ingin bertarung.
+
+- **Cek Banned Status**  
+  Jika hunter (`self`) memiliki status banned, maka pertarungan tidak diizinkan dan program menampilkan pesan:  
+  `"You're banned!"`
+
+- **Menampilkan Daftar Hunter Lain**  
+  Menampilkan semua hunter lain (selain `self`) lengkap dengan informasi:
+  - Username
+  - Level
+  - ATK
+  - HP
+  - DEF
+
+- **Memilih Lawan**  
+  Pemain diminta memasukkan indeks hunter yang ingin dilawan.  
+  Validasi dilakukan untuk memastikan:
+  - Indeks tidak keluar dari batas array
+  - Tidak memilih diri sendiri  
+  Jika tidak valid, muncul pesan `"Invalid choice."`
+
+- **Cek Status Banned Lawan**  
+  Jika lawan yang dipilih ternyata juga dibanned, pertarungan dibatalkan dengan pesan:  
+  `"The opponent is being banned"`
+
+- **Menghitung Total Stat**  
+  Memanggil fungsi `totalStat()` untuk menghitung kekuatan total hunter dan lawan. Biasanya mencakup kombinasi ATK + HP + DEF.
+
+- **Jika Menang (stat_self >= stat_enemy):**
+  - Menampilkan ASCII art kemenangan berwarna.
+  - Statistik `opponent` (atk, hp, def, exp, level) ditambahkan ke `self`.
+  - Hunter lawan dihapus dari array:
+    - Menggeser elemen-elemen setelahnya ke kiri.
+    - Mengurangi `num_hunters` sebanyak satu.
+
+- **Jika Kalah (stat_self < stat_enemy):**
+  - Menampilkan ASCII art 
+  - Statistik `self` diserap oleh `opponent`.
+  - Hunter `self` dihapus dari array dengan cara yang sama.
+  - Menampilkan pesan `"You are removed from the system."`
+  - Keluar dari program:
+    - Melepaskan shared memory (`shmdt(sys)`)
+    - `exit(0)` untuk menghentikan eksekusi
+
+- **Dekorasi Terminal**  
+  ASCII art hasil pertarungan ditampilkan dengan warna menggunakan ANSI escape code untuk memberi efek dramatis pada hasil.
+
+- **Efek Akhir**  
+  Setelah pertarungan:
+  - Pemenang menjadi lebih kuat karena menyerap kekuatan lawannya.
+  - Yang kalah dihapus dari sistem.
 
 ##### Output
 
@@ -1650,7 +1925,18 @@ void banHunter() {
     }
     printf("Not found.\n");
 }
-
+```
+- **Tujuan**: Melarang seorang hunter (pengguna) tertentu agar tidak bisa ikut bertarung.
+- **Langkah-langkah:**
+  - Meminta input username dari pengguna.
+  - Melakukan pencarian hunter dengan username tersebut di dalam array `sys->hunters`.
+  - Jika ditemukan:
+    - Properti `banned` hunter di-set menjadi `1` (artinya dibanned).
+    - Menampilkan pesan konfirmasi: `<username> has been banned.`
+  - Jika tidak ditemukan:
+    - Menampilkan pesan: `"Not found."`
+      
+```
 void unbanHunter() {
     char username[50];
     printf("Enter the hunter's username to unban: ");
@@ -1665,6 +1951,22 @@ void unbanHunter() {
     printf("Not found.\n");
 }
 ```
+- **Tujuan**: Mengembalikan status hunter yang sebelumnya dibanned agar bisa bertarung kembali.
+- **Langkah-langkah:**
+  - Meminta input username dari pengguna.
+  - Melakukan pencarian hunter dengan username tersebut.
+  - Jika ditemukan:
+    - Properti `banned` hunter di-set menjadi `0` (artinya tidak dibanned).
+    - Menampilkan pesan: `<username> has been unbanned.`
+  - Jika tidak ditemukan:
+    - Menampilkan pesan: `"Not found."`
+   
+- Kedua fungsi menggunakan `scanf("%s", username)` untuk membaca nama pengguna.
+- Fungsi pencarian dilakukan menggunakan `strcmp()` untuk membandingkan string.
+- Hanya hunter yang ditemukan secara exact match yang statusnya bisa diubah.
+- Status `banned` disimpan sebagai `int`, dengan:
+  - `1` berarti dibanned
+  - `0` berarti aktif/normal
 
 ##### Output
 
@@ -1689,6 +1991,24 @@ void resetHunter() {
     printf("Not found.\n");
 }
 ```
+- **Tujuan**: Mengatur ulang statistik (stat) seorang hunter ke nilai default.
+**Langkah-Langkah**
+- Program meminta input nama pengguna (username) hunter yang ingin di-reset.
+- Melakukan pencarian di array `sys->hunters` untuk mencocokkan username menggunakan `strcmp`.
+- Jika hunter ditemukan:
+  - Statistik hunter di-reset ke nilai awal/default:
+    - `level = 1`
+    - `exp = 0`
+    - `atk = 10`
+    - `hp = 100`
+    - `def = 5`
+  - Menampilkan pesan: `"Stats for <username> have been reset."`
+- Jika tidak ditemukan:
+  - Menampilkan pesan: `"Not found."`
+
+- Fungsi ini berguna untuk admin atau sistem yang ingin memberikan kesempatan kedua kepada hunter.
+- Nilai default dapat disesuaikan sesuai desain awal game.
+- Tidak mengubah status banned atau username, hanya atribut kekuatan hunter.
 
 ##### Output
 
@@ -1718,6 +2038,34 @@ void *notifDungeon(void *arg) {
     return NULL;
 }
 ```
+- **Tujuan**: Menampilkan notifikasi berkala tentang dungeon yang tersedia berdasarkan level hunter aktif.
+**Parameter dan Variabel Global**
+- `void *arg`: Parameter standar untuk fungsi thread (tidak digunakan di sini).
+- `sys_global`: Variabel global pointer ke sistem utama yang berisi semua dungeon.
+- `hunter_global`: Pointer global ke hunter yang sedang aktif.
+- `stop_notif`: Variabel global bertipe boolean yang digunakan untuk menghentikan loop notifikasi.
+
+**Proses Utama (di dalam loop `while`)**
+- **Selama `stop_notif` bernilai false (0)**, maka:
+  - Inisialisasi `found = 0` untuk menandai apakah ada dungeon yang bisa dimasuki.
+  - Lakukan iterasi pada semua dungeon dalam `sys_global->dungeons`.
+  - Untuk setiap dungeon:
+    - Jika `hunter_global->level >= d.min_level`:
+      - Cetak pesan notifikasi bahwa dungeon tersebut bisa dimasuki.
+      - Set `found = 1`.
+  - Jika tidak ada dungeon yang tersedia (`found == 0`):
+    - Cetak pesan bahwa tidak ada dungeon yang bisa diakses sesuai level hunter.
+- Gunakan `fflush(stdout)` agar output langsung tampil tanpa buffering.
+- Fungsi `sleep(3)` digunakan untuk menunda 3 detik sebelum iterasi berikutnya (notifikasi periodik).
+
+**NOTE**
+- Fungsi ini cocok dijalankan sebagai thread terpisah agar bisa terus memantau ketersediaan dungeon tanpa mengganggu alur program utama.
+- Warna teks dan simbol 📢 digunakan untuk menarik perhatian pengguna (menggunakan ANSI escape code).
+- Thread akan berhenti jika `stop_notif` di-set ke true oleh thread lain atau oleh perintah user.
+- Biasanya fungsi ini akan dipanggil menggunakan thread seperti:
+``
+pthread_t t;
+pthread_create(&t, NULL, notifDungeon, NULL);``
 
 ##### Output
 
@@ -1731,6 +2079,21 @@ void cleanup(int sig) {
     exit(0);
 }
 ```
+- **Tujuan**: Menangani proses pembersihan (cleanup) saat program dihentikan, khususnya untuk membebaskan shared memory.
+**Parameter**
+- `int sig`: Parameter sinyal yang diterima oleh handler (biasanya `SIGINT`, `SIGTERM`, dll).
+**Langkah-langkah**
+1. Menampilkan pesan: 
+2. Mengecek apakah pointer `sys` tidak `NULL`:
+- Jika ya, maka shared memory dilepaskan dari proses menggunakan `shmdt(sys)`.
+3. Mengecek apakah `shmid` tidak `-1`:
+- Jika ya, maka segment shared memory dihapus dari sistem dengan `shmctl(shmid, IPC_RMID, NULL)`.
+4. Keluar dari program menggunakan `exit(0)`.
+**Catatan Tambahan**
+- Fungsi ini umumnya digunakan sebagai **signal handler**.
+- Biasanya didaftarkan dengan:
+``
+signal(SIGINT, cleanup);``
 
 ##### Output
 
