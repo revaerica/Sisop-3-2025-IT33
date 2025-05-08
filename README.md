@@ -458,6 +458,48 @@ int main() {
 }
 
 ```
+- Menjalankan dungeon sebagai **server TCP**
+- Menerima koneksi dari client (`player.c`)
+- Memproses setiap client secara **paralel dengan thread**
+1. **Inisialisasi Data Client**
+   - `initClients();`  
+     Mengatur semua slot player agar tidak aktif (`active = 0`).
+2. **Membuat TCP Socket**
+   - `socket(AF_INET, SOCK_STREAM, 0);`  
+     Membuat socket untuk koneksi TCP IPv4.
+3. **Mengatur Opsi Reuse Address**
+   - `setsockopt(..., SO_REUSEADDR, ...)`  
+     Agar port bisa dipakai ulang tanpa error “Address already in use”.
+4. **Mengisi Informasi Alamat Server**
+   - IP: `INADDR_ANY` → menerima dari semua IP  
+   - Port: `htons(PORT)` → port server
+5. **Binding Socket ke Alamat dan Port**
+   - `bind()`  
+     Mengikat socket agar bisa menerima koneksi.
+6. **Mendengarkan Koneksi Client**
+   - `listen(..., 5);`  
+     Server siap menerima hingga 5 koneksi pending.
+
+7. **Mencetak Status Server**
+   - Menampilkan log bahwa server aktif di terminal.
+8. **Loop Accept Client**
+   - `while ((client_sock = accept(...)))`  
+     Server akan terus menunggu koneksi client baru.
+9. **Alokasi Memori untuk Socket Client**
+   - `malloc(sizeof(int))`  
+     Menyimpan socket client sebagai pointer untuk digunakan di thread.
+10. **Membuat Thread untuk Client**
+    - `pthread_create()`  
+      Menjalankan `handlePlayer()` di thread baru untuk setiap client.
+11. **Melepas Thread Otomatis**
+    - `pthread_detach()`  
+      Supaya thread tidak perlu di-join dan tidak jadi zombie.
+- Jika `socket`, `bind`, `listen`, atau `accept` gagal >> cetak pesan dan keluar.
+- Jika `malloc` atau `pthread_create` gagal >> tolak client dengan aman.
+12. **Menutup Socket Server**
+    - `close(server_fd);`  
+      Dilakukan jika loop keluar karena kesalahan.
+
 ``player.c``
 ```
 int main() {
@@ -485,6 +527,32 @@ int main() {
     printf("%sConnected to dungeon server.%s\n", GREEN, RESET);
 ......
 ```
+### 📌 Fungsi `main()` bertugas untuk:
+- Menjalankan client yang menghubungkan pemain ke server (`dungeon.c`)
+- Menampilkan menu utama dungeon kepada pemain
+- Mengirim perintah ke server dan menerima respon
+
+1. **Membuat Socket TCP**
+   - `socket(AF_INET, SOCK_STREAM, 0);`  
+     Membuat socket TCP untuk berkomunikasi dengan server.
+2. **Mengatur Alamat Server**
+   - `inet_addr("127.0.0.1")` → alamat IP lokal  
+   - `htons(PORT)` → port server dungeon  
+   - Mengisi `struct sockaddr_in` dengan informasi tersebut
+3. **Mencoba Koneksi ke Server**
+   - `connect(sock, (struct sockaddr *)&server, ...)`  
+     Menghubungkan socket client ke socket server dungeon
+4. **Menangani Gagal Koneksi**
+   - Jika gagal konek (server belum aktif), tampilkan pesan error:
+     ```
+     Connect failed: Connection refused
+     ```
+5. **Koneksi Berhasil**
+   - Jika sukses, tampilkan:
+     ```
+     Connected to dungeon server.
+     ```
+- Variabel `buffer[]` dan `input[]` digunakan untuk mengirim perintah dan menerima data.
 
 ##### Output
 
