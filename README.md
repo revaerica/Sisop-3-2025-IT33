@@ -209,6 +209,15 @@ void log_event(const char* role, const char* action, const char* detail) {
 ##### Penjelasan
 - Setiap kali ada aksi (decrypt, save, download, error), `log_event()` akan dipanggil untuk mencatat kejadian tersebut ke dalam log.
 
+#### H. Kesimpulan
+Program client-server `image_client.c` dan `image_server.c` berhasil membentuk sistem komunikasi berbasis RPC menggunakan socket TCP. Program ini mampu:
+- Mengunduh dan membaca file teks terenkripsi dari file txt.
+- Melakukan dekripsi menggunakan metode reverse text dan decode hex.
+- Menyimpan hasil dekripsi dalam bentuk file `.jpeg` di server.
+- Memungkinkan client untuk mengunduh file hasil dekripsi dari server melalui menu interaktif.
+- Mencatat semua aktivitas ke dalam log `server.log` dengan format yang konsisten.
+- Menangani kesalahan seperti koneksi gagal, file tidak ditemukan, dan error pada dekripsi.
+Dengan keberhasilan sistem ini, client dapat mengakses dan mengungkap isi pesan rahasia dari masa lalu untuk melacak keberadaan hacker legendaris “rootkids”. Sistem juga dirancang agar robust, modular, dan dapat digunakan secara berulang dengan proses yang otomatis maupun manual sesuai kebutuhan skenario.
 ---
 
 ## Soal 2
