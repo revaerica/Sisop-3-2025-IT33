@@ -553,7 +553,6 @@ int main() {
     printf("%sConnected to dungeon server.%s\n", GREEN, RESET);
 ......
 ```
-### 📌 Fungsi `main()` bertugas untuk:
 - Menjalankan client yang menghubungkan pemain ke server (`dungeon.c`)
 - Menampilkan menu utama dungeon kepada pemain
 - Mengirim perintah ke server dan menerima respon
@@ -581,6 +580,7 @@ int main() {
 - Variabel `buffer[]` dan `input[]` digunakan untuk mengirim perintah dan menerima data.
 
 ##### Output
+
 
 #### b. Sightseeing 
 Anda melihat disekitar dungeon dan menemukan beberapa hal yang menarik seperti toko senjata dan pintu dengan aura yang cukup seram. Ketika player.c dijalankan, ia akan terhubung ke dungeon.c dan menampilkan sebuah main menu.
@@ -1313,7 +1313,6 @@ void showHunter() {
 Setiap dungeon akan disimpan dalam shared memory sendiri yang berbeda dan dapat diakses oleh hunter.
 ##### Code
 ```
-
 void createDungeon() {
     if (sys->num_dungeons >= MAX_DUNGEONS) return;
 
