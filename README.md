@@ -259,7 +259,7 @@ Dokumentasi pengerjaan nomor 1 <br> <br>
 
 #### [1] Jika dijalankan `./server/image_server`
 Perintah ``./server/image_server`` akan menjalankan sebagai daemon
-![desc]! (assets/01%201.%20server.png) <br>
+![desc](assets/01%201.%20server.png) <br>
 
 ### [2] Jika dijalankan `./client/image_client`
 Perintah ``./action -m Filter`` akan mendownload dan unzip dari link google drive yang sudah diperintahkan yang berisi file txt, lalu menampilkan menu interaktif<br>
