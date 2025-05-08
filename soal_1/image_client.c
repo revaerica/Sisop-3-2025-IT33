@@ -195,7 +195,7 @@ int send_request(const char* request, char* response, size_t resp_size) {
 
 void handle_decrypt() {
     char filename[MAX_FILENAME];
-    printf("Enter input filename: ");
+    printf("Enter the file name: ");
     fgets(filename, sizeof(filename), stdin);
     filename[strcspn(filename, "\n")] = '\0';
 
@@ -236,7 +236,7 @@ void handle_decrypt() {
 
 void handle_download() {
     char filename[MAX_FILENAME];
-    printf("Enter filename to download: ");
+    printf("Enter the file name: ");
     fgets(filename, sizeof(filename), stdin);
     filename[strcspn(filename, "\n")] = '\0';
 
