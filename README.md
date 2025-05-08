@@ -350,12 +350,103 @@ Dengan implementasi dua program utama `delivery_agent` dan `dispatcher`, sistem 
 #### a. Entering the dungeon
 dungeon.c akan bekerja sebagai server yang dimana client (player.c) dapat terhubung melalui RPC. dungeon.c akan memproses segala perintah yang dikirim oleh player.c. Lebih dari 1 client dapat mengakses server.
 ##### Code
+``dungeon.c``
+```
+int main() {
+    initClients();
+    int server_fd, client_sock;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd == -1) {
+        perror("Socket creation failed");
+        return 1;
+    }
+
+    int opt = 1;
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        perror("Setsockopt failed");
+        close(server_fd);
+        return 1;
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(PORT);
+
+    if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Bind failed");
+        close(server_fd);
+        return 1;
+    }
+
+    if (listen(server_fd, 5) < 0) {
+        perror("Listen failed");
+        close(server_fd);
+        return 1;
+    }
+
+    printf("%s[Server Started] Listening on port %d...%s\n", CYAN, PORT, RESET);
+............
+
+    while ((client_sock = accept(server_fd, (struct sockaddr *)&client_addr, &addr_len))) {
+        pthread_t tid;
+        int *pclient = malloc(sizeof(int));
+        if (!pclient) {
+            perror("Memory allocation failed");
+            close(client_sock);
+            continue;
+        }
+        *pclient = client_sock;
+        if (pthread_create(&tid, NULL, handlePlayer, pclient) != 0) {
+            perror("Thread creation failed");
+            free(pclient);
+            close(client_sock);
+            continue;
+        }
+        pthread_detach(tid);
+    }
+
+    close(server_fd);
+    return 0;
+}
+
+```
+``player.c``
+```
+int main() {
+    int sock;
+    struct sockaddr_in server;
+    char buffer[BUFFER_SIZE];
+    char input[BUFFER_SIZE];
+
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == -1) {
+        perror("Could not create socket");
+        return 1;
+    }
+
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server.sin_family = AF_INET;
+    server.sin_port = htons(PORT);
+
+    if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
+        perror("Connect failed");
+        close(sock);
+        return 1;
+    }
+
+    printf("%sConnected to dungeon server.%s\n", GREEN, RESET);
+......
+```
 
 ##### Output
 
 #### b. Sightseeing 
 Anda melihat disekitar dungeon dan menemukan beberapa hal yang menarik seperti toko senjata dan pintu dengan aura yang cukup seram. Ketika player.c dijalankan, ia akan terhubung ke dungeon.c dan menampilkan sebuah main menu.
 ##### Code
+``player.c``
 ```
 while (1) {
         printf("\n%s╔════════════════════════════════╗%s\n", YELLOW, RESET);
@@ -375,6 +466,7 @@ while (1) {
             continue;
         }
         input[strcspn(input, "\n")] = 0;
+.....}
 ```
 
 ##### Output
@@ -382,6 +474,7 @@ while (1) {
 #### c. Status Check
 Melihat bahwa terdapat sebuah toko senjata, anda mengecek status diri anda dengan harapan anda masih memiliki sisa uang untuk membeli senjata. Jika opsi Show Player Stats dipilih, maka program akan menunjukan Uang yang dimiliki (Jumlah dibebaskan), senjata yang sedang digunakan, Base Damage, dan jumlah musuh yang telah dimusnahkan. 
 ##### Code
+``dungeon.c``
 ```
 void showStats(int client_sock, Player *p) {
     char buffer[BUFFER_SIZE * 2];
@@ -406,11 +499,60 @@ void showStats(int client_sock, Player *p) {
 }
 ```
 
+``player.c``
+```
+int main () {
+........
+if (strcmp(input, "1") == 0) {
+            if (send(sock, "STATS", strlen("STATS"), 0) < 0) {
+                perror("Send failed");
+                break;
+            }
+.......
+}
+```
+
 ##### Output
 
 #### d. Weapon Shop
 Ternyata anda memiliki sisa uang dan langsung pergi ke toko senjata tersebut untuk membeli senjata. Terdapat 5 pilihan senjata di toko tersebut dan beberapa dari mereka memiliki passive yang unik. Disaat opsi Shop dipilih, program akan menunjukan senjata apa saja yang dapat dibeli beserta harga, damage, dan juga passive (jika ada). List senjata yang ada dan dapat dibeli beserta logic/command untuk membeli senjata tersebut diletakan di code shop.c yang nanti akan dipakai oleh dungeon.c.
 ##### Code
+``shop.c``
+```
+Weapon weapons[MAX_WEAPONS] = {
+    {"Iron Sword", 50, 10, "-", 0},
+    {"Flame Blade", 200, 25, "Burn: 10% chance to deal 2x damage", 1},
+    {"Poison Dagger", 90, 12, "Poison: Deals 5 damage per turn", 1},
+    {"Thunder Staff", 250, 30, "Shock: 20% chance to chain attack", 1},
+    {"Sky Piercer", 275, 20, "Execute: Auto-kill enemies <20%% HP", 1},
+    {"Blade of Despair", 600, 45, "Despair: +25% damage to enemies <50%% HP", 1},
+    {"Wind of Nature", 480, 0, "Wind Chant: Immune to phys damage (2s)", 1},
+    {"Bloodlust Axe", 520, 28, "Bloodlust: 20%% spell vamp", 1},
+    {"Sea Halberd", 500, 30, "Life Drain: -50%% HP regen", 1}
+};
+
+Weapon* buyWeapon(int choice, Player *p) {
+    if (choice < 1 || choice > MAX_WEAPONS) {
+        return NULL;
+    }
+
+    Weapon *selected = &weapons[choice - 1];
+    if (p->gold < selected->price) {
+        return NULL;
+    }
+
+    if (p->weaponCount >= MAX_WEAPONS) {
+        return NULL;
+    }
+
+    p->gold -= selected->price;
+    p->inventory[p->weaponCount] = *selected;
+    p->weaponCount++;
+    return selected;
+}
+```
+
+``dungeon.c``
 ```
 void displayShop(int client_sock) {
     char buffer[BUFFER_SIZE] = "";
@@ -456,6 +598,7 @@ void displayShop(int client_sock) {
 #### e. Handy Inventory
 Setelah membeli senjata di toko tadi, anda membuka ransel anda untuk memakai senjata tersebut. Jika opsi View Inventory dipilih, program akan menunjukan senjata apa saja yang dimiliki dan dapat dipakai (jika senjata memiliki passive, tunjukan juga passive tersebut). Lalu apabila opsi Show Player Stats dipilih saat menggunakan weapon maka Base Damage player akan berubah dan jika memiliki passive, maka akan ada status tambahan yaitu Passive.
 ##### Code
+``dungeon.c``
 ```
 void showInvent(int client_sock, Player *p) {
     char buffer[BUFFER_SIZE * 2];
@@ -497,11 +640,47 @@ void showInvent(int client_sock, Player *p) {
 }
 ```
 
+``player.c``
+```
+else if (strcmp(input, "4") == 0) {
+            if (send(sock, "INVENTORY", strlen("INVENTORY"), 0) < 0) {
+                perror("Send failed");
+                break;
+            }
+            memset(buffer, 0, BUFFER_SIZE);
+            if (recv(sock, buffer, BUFFER_SIZE, 0) <= 0) {
+                printf("%sDisconnected from server.%s\n", RED, RESET);
+                break;
+            }
+            printf("%s\n", buffer);
+            printf("%sEnter Weapon ID to equip (0 to cancel): %s", GREEN, RESET);
+            if (!fgets(input, BUFFER_SIZE, stdin)) {
+                printf("%sError reading input.%s\n", RED, RESET);
+                continue;
+            }
+            input[strcspn(input, "\n")] = 0;
+            int choice;
+            if (sscanf(input, "%d", &choice) != 1 || choice < 0) {
+                printf("%sInvalid input!%s\n", RED, RESET);
+                continue;
+            }
+            if (choice == 0) {
+                printf("%sCanceled.%s\n", YELLOW, RESET);
+                continue;
+            }
+            snprintf(buffer, sizeof(buffer), "EQUIP %d", choice);
+            if (send(sock, buffer, strlen(buffer), 0) < 0) {
+                perror("Send failed");
+                break;
+            }
+```
+
 ##### Output
 
 #### f.	Enemy Encounter
 Anda sekarang sudah siap untuk melewati pintu yang seram tadi, disaat anda memasuki pintu tersebut, anda langsung ditemui oleh sebuah musuh yang bukan sebuah manusia. Dengan tekad yang bulat, anda melawan musuh tersebut. Saat opsi Battle Mode dipilih, program akan menunjukan health-bar musuh serta angka yang menunjukan berapa darah musuh tersebut dan menunggu input dengan opsi attack untuk melakukan sebuah serangan dan juga exit untuk keluar dari Battle Mode. Apabila darah musuh berkurang, maka health-bar musuh akan berkurang juga. Jika darah musuh sudah 0, maka program akan menunjukan rewards berupa berapa banyak gold yang didapatkan lalu akan muncul musuh lagi.
 ##### Code
+``dungeon.c``
 ```
 void handleBattle(int client_sock, Player *p) {
     char buffer[BUFFER_SIZE];
@@ -620,6 +799,39 @@ void handleBattle(int client_sock, Player *p) {
         }
     }
 }
+```
+
+``player.c``
+```
+int main () {
+.....
+else if (strcmp(input, "5") == 0) {
+            if (send(sock, "BATTLE", strlen("BATTLE"), 0) < 0) {
+                perror("Send failed");
+                break;
+            }
+            while (1) {
+                memset(buffer, 0, BUFFER_SIZE);
+                ssize_t received = recv(sock, buffer, BUFFER_SIZE, 0);
+                if (received <= 0) {
+                    printf("%sDisconnected from server.%s\n", RED, RESET);
+                    break;
+                }
+                printf("%s\n", buffer);
+                if (strstr(buffer, "defeated") || strstr(buffer, "exited")) break;
+                printf("%sEnter action (attack/exit): %s", GREEN, RESET);
+                if (!fgets(input, BUFFER_SIZE, stdin)) {
+                    printf("%sError reading input.%s\n", RED, RESET);
+                    break;
+                }
+                input[strcspn(input, "\n")] = 0;
+                if (send(sock, input, strlen(input), 0) < 0) {
+                    perror("Send failed");
+                    break;
+                }
+            }
+            continue;
+....}
 ```
 
 ##### Output
