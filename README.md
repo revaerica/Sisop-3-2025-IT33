@@ -212,6 +212,138 @@ void log_event(const char* role, const char* action, const char* detail) {
 ---
 
 ## Soal 2
+### Oleh: Kaisar Hanif Pratama (5027241029)
+
+### Soal
+Tahun 2025, di tengah era perdagangan serba cepat, berdirilah sebuah perusahaan ekspedisi baru bernama RushGo. RushGo ingin memberikan layanan ekspedisi terbaik dengan 2 pilihan, Express (super cepat) dan Reguler (standar). Namun, pesanan yang masuk sangat banyak! Mereka butuh sistem otomatisasi pengiriman agar agen tidak kewalahan. Sistem ini terdiri dari dua bagian: <br>
+1. `delivery_agent.c` untuk agen otomatis pengantar Express
+2. `dispatcher.c` untuk pengiriman dan monitoring pesanan oleh user <br>
+
+### Jawaban
+#### A. Mengunduh File Order dan Menyimpannya ke Shared Memory
+- File CSV (`delivery_order.csv`) diunduh dan disalin sebagai `delivery_order_downloaded.csv`
+- Data dibaca dan disimpan ke shared memory menggunakan struktur `SharedMemory` <br>
+
+##### Kode
+```
+void download_csv() {
+    system("cp delivery_order.csv delivery_order_downloaded.csv");
+    printf("File downloaded as delivery_order_downloaded.csv\n");
+}
+
+void read_csv_to_shared_memory() {
+    FILE *file = fopen("delivery_order_downloaded.csv", "r");
+    ...
+    while (fgets(line, sizeof(line), file) && index < MAX_ORDERS) {
+        ...
+        strncpy(shared_mem->orders[index].name, token, ...);
+        strncpy(shared_mem->orders[index].address, token, ...);
+        strncpy(shared_mem->orders[index].type, token, ...);
+        shared_mem->orders[index].delivered = 0;
+        shared_mem->orders[index].order_time = time(NULL);
+        index++;
+    }
+    shared_mem->count = index;
+    fclose(file);
+}
+```
+##### Penjelasan
+- Fungsi `download_csv()` menyalin file order.
+- Fungsi `read_csv_to_shared_memory()` membaca file CSV dan menyimpannya ke shared memory.
+
+---
+
+#### B. Pengiriman Bertipe Express
+- Tiga agen: AGENT A, AGENT B, AGENT C dijalankan sebagai thread.
+- Masing-masing agen secara otomatis mencari pesanan bertipe "Express" yang belum dikirim.
+
+##### Kode
+```
+void *agent_delivery(void *arg) {
+    char *agent_name = (char *)arg;
+    while (1) {
+        sem_wait(&shared_mem->semaphore);
+        for (int i = 0; i < shared_mem->count; i++) {
+            if (strcmp(shared_mem->orders[i].type, "Express") == 0 &&
+                shared_mem->orders[i].delivered == 0) {
+                shared_mem->orders[i].delivered = 1;
+                sleep(1);
+                log_delivery(agent_name, ...);
+                break;
+            }
+        }
+        sem_post(&shared_mem->semaphore);
+        sleep(1);
+    }
+}
+```
+##### Penjelasan
+- Tiap thread agen mencari pesanan Express yang belum terkirim.
+- Setelah berhasil kirim, dicatat ke `delivery.log` dengan timestamp dan informasi agen.
+
+---
+
+#### C. Pengiriman Bertipe Reguler
+- Dijalankan manual oleh user via `./dispatcher -deliver [Nama]`
+- Agen adalah user yang menjalankan perintah tersebut
+
+##### Kode - `dispatcher.c`
+```
+else if (strcmp(argv[1], "-deliver") == 0 && argc == 3) {
+    for (int i = 0; i < orderList->count; i++) {
+        if (strcmp(orderList->orders[i].name, argv[2]) == 0 &&
+            strcmp(orderList->orders[i].type, "Reguler") == 0) {
+            strcpy(orderList->orders[i].status, "Delivered");
+            char *username = getenv("USER");
+            strcpy(orderList->orders[i].agent, username);
+            logDelivery(username, ...);
+        }
+    }
+}
+```
+##### Penjelasan
+- Cek apakah order Reguler atas nama tersebut masih "Pending".
+- Tandai sebagai "Delivered", dan agent diset nama user.
+---
+
+#### D. Mengecek Status Pesanan
+- Digunakan perintah `./dispatcher -status [Nama]`
+- Program akan menampilkan status dan nama agent yang mengirimkan.
+
+##### Kode `dispatcher.c`
+```
+else if (strcmp(argv[1], "-status") == 0 && argc == 3) {
+    for (int i = 0; i < orderList->count; i++) {
+        if (strcmp(orderList->orders[i].name, argv[2]) == 0) {
+            printf("Status for %s: %s by Agent %s\n", ...);
+        }
+    }
+}
+```
+##### Penjelasan
+- Program mencari order berdasarkan nama dan menampilkan status terkini dan nama agen.
+---
+
+#### E. Melihat Daftar Semua Pesanan
+- Menggunakan `./dispatcher -list`
+- Akan menampilkan seluruh order beserta status dan agen pengantar
+
+##### Kode - `dispatcher.c`
+```
+if (strcmp(argv[1], "-list") == 0) {
+    for (int i = 0; i < orderList->count; i++) {
+        printf("%d. %s - %s - %s - %s\n", ...);
+    }
+}
+```
+
+##### Penjelasan
+- Menampilkan semua order dari shared memory, termasuk nama, jenis, status, dan agen yang bertugas.
+
+---
+
+#### Kesimpulan
+Dengan implementasi dua program utama `delivery_agent` dan `dispatcher`, sistem Delivery Management RushGo dapat menangani pengiriman express secara otomatis oleh agen, dan reguler secara manual oleh user. Shared memory digunakan sebagai penyimpanan bersama antara agent dan dispatcher, serta semua aktivitas dicatat pada `delivery.log`.
 
 ## Soal 3
 ### Oleh: Revalina Erica Permatasari (5027241007)
