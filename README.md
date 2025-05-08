@@ -218,6 +218,42 @@ Program client-server `image_client.c` dan `image_server.c` berhasil membentuk s
 - Mencatat semua aktivitas ke dalam log `server.log` dengan format yang konsisten.
 - Menangani kesalahan seperti koneksi gagal, file tidak ditemukan, dan error pada dekripsi. <br>
 Dengan keberhasilan sistem ini, client dapat mengakses dan mengungkap isi pesan rahasia dari masa lalu untuk melacak keberadaan hacker legendaris “rootkids”. Sistem juga dirancang agar robust, modular, dan dapat digunakan secara berulang dengan proses yang otomatis maupun manual sesuai kebutuhan skenario.
+
+### Kendala
+Selama proses saya mengerjakan nomor 1, saya mengalami kendala saat mencoba mendekripsi isi file teks menjadi gambar. Masalah utamanya adalah:
+
+#### Masalah
+File hasil dekripsi tidak dapat dibuka sebagai gambar karena urutan data tidak sesuai. Setelah ditelusuri, ternyata saya lupa melakukan proses reverse text sebelum melakukan decoding dari format hex. Hal ini menyebabkan struktur file gambar (signature file) berada di akhir, bukan di awal seperti yang seharusnya (FFD8 untuk JPEG signature), sehingga file dianggap rusak oleh image viewer.
+
+#### Solusi & Revisi 
+Untuk mengatasi hal ini, saya menambahkan proses pembalikan string (reverse text) sebelum dikonversi dari hex ke biner. Dengan cara ini, struktur file kembali seperti semula dan hasil decoding berhasil dibuka sebagai file JPEG yang valid.
+
+Kode tersebut diterapkan di sisi server sebelum proses penyimpanan file JPEG. Setelah perbaikan ini, seluruh proses dekripsi berjalan lancar dan file dapat ditampilkan dengan benar.
+##### Kode
+```
+int hex_to_bin(const char* hex, unsigned char* out, size_t hex_len) {
+    if (hex_len % 2 != 0) return -1;
+    
+    for (size_t i = 0; i < hex_len; i += 2) {
+        if (sscanf(hex + i, "%2hhx", &out[i/2]) != 1) return -1;
+    }
+    return hex_len / 2;
+}
+
+void reverse_string(char* str) {
+    size_t len = strlen(str);
+    for (size_t i = 0; i < len/2; i++) {
+        char tmp = str[i];
+        str[i] = str[len - 1 - i];
+        str[len - 1 - i] = tmp;
+    }
+}
+```
+##### Penjelasan
+Dua fungsi ini dibuat untuk mengatasi kendala dekripsi file JPEG yang rusak:
+- `reverse_string()` digunakan untuk membalik urutan teks terenkripsi karena struktur file JPEG harus dimulai dengan signature tertentu (FFD8). Tanpa dibalik, signature berada di akhir sehingga gambar tidak terbaca.
+- `hex_to_bin()` mengubah teks hasil reverse dari format heksadesimal menjadi data biner mentah, agar bisa disimpan sebagai file .jpeg yang valid dan dikenali image viewer.
+
 ---
 
 ## Soal 2
