@@ -254,6 +254,33 @@ Dua fungsi ini dibuat untuk mengatasi kendala dekripsi file JPEG yang rusak:
 - `reverse_string()` digunakan untuk membalik urutan teks terenkripsi karena struktur file JPEG harus dimulai dengan signature tertentu (FFD8). Tanpa dibalik, signature berada di akhir sehingga gambar tidak terbaca.
 - `hex_to_bin()` mengubah teks hasil reverse dari format heksadesimal menjadi data biner mentah, agar bisa disimpan sebagai file .jpeg yang valid dan dikenali image viewer.
 
+### Dokumentasi
+Dokumentasi pengerjaan nomor 1 <br> <br>
+
+#### [1] Jika dijalankan `./server/image_server`
+Perintah ``./server/image_server`` akan menjalankan sebagai daemon
+![desc]! (assets/01%201.%20server.png) <br>
+
+### [2] Jika dijalankan `./client/image_client`
+Perintah ``./action -m Filter`` akan mendownload dan unzip dari link google drive yang sudah diperintahkan yang berisi file txt, lalu menampilkan menu interaktif<br>
+![desc](assets/01%202.%20client.png) <br>
+
+### [3] Menu 1
+input angka 1 pada menu, dan menambahkan nama file yang akan di decrypt dan dikirimkan ke server <br>
+![desc](assets/01%203.%20menu%201.png) <br>
+
+
+### [4] Menu 2
+input angka 2 pada menu, dan menambahkan nama file yang akan didownload atau dikirimkan kepada client<br>
+![desc](assets/01%204.%20menu%202.png) <br>
+
+### [5] Tampilan Gambar
+Output dari file input_1.txt yang sudah di decrypt
+![desc](assets/01%205.%20gambar.png)<br>
+
+### [6] Isi dari `server.log`
+![desc](assets/01%206.%20log.png)<br>
+
 ---
 
 ## Soal 2
