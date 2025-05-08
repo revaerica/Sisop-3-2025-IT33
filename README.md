@@ -1927,6 +1927,7 @@ Fungsi `battle` digunakan dalam game untuk memungkinkan seorang hunter (`self`) 
   - Yang kalah dihapus dari sistem.
 
 ##### Output
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/8fd7b75b-15fa-445c-8692-c6132f941e8a" />
 
 #### i. Saat sedang memonitoring sistem, Sung Jin Woo melihat beberapa hunter melakukan kecurangan di dalam sistem. Ia menambahkan fitur di sistem yang membuat dia dapat melarang hunter tertentu untuk melakukan raid atau battle. Karena masa percobaan tak bisa berlangsung selamanya 😇, Sung Jin Woo pun juga menambahkan konfigurasi agar fiturnya dapat memperbolehkan hunter itu melakukan raid atau battle lagi. 
 ##### Code
@@ -1988,6 +1989,10 @@ void unbanHunter() {
   - `0` berarti aktif/normal
 
 ##### Output
+<img width="364" alt="image" src="https://github.com/user-attachments/assets/c42ce657-7683-4e54-bd85-cfd3779afaa9" />
+
+<img width="272" alt="image" src="https://github.com/user-attachments/assets/d900e8b4-4eb1-4900-aaad-89b34430ff13" />
+
 
 #### j. Setelah beberapa pertimbangan, untuk memberikan kesempatan kedua bagi hunter yang ingin bertobat dan memulai dari awal, Sung Jin Woo juga menambahkan fitur di sistem yang membuat dia bisa mengembalikan stats hunter tertentu ke nilai awal. 
 ##### Code
