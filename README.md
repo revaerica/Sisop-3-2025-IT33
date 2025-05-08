@@ -356,30 +356,271 @@ dungeon.c akan bekerja sebagai server yang dimana client (player.c) dapat terhub
 #### b. Sightseeing 
 Anda melihat disekitar dungeon dan menemukan beberapa hal yang menarik seperti toko senjata dan pintu dengan aura yang cukup seram. Ketika player.c dijalankan, ia akan terhubung ke dungeon.c dan menampilkan sebuah main menu.
 ##### Code
+```
+while (1) {
+        printf("\n%s╔════════════════════════════════╗%s\n", YELLOW, RESET);
+        printf("%s║ %s🎮 %sWELCOME TO THE ADVENTURE!%s🎮 ║%s\n", YELLOW, GREEN, YELLOW, GREEN, RESET);
+        printf("%s╠════════════════════════════════╣%s\n", YELLOW, RESET);
+        printf("%s║ %s1. Show Stats       %s💥         ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s2. Show Shop        %s🛒         ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s3. Buy Weapon       %s⚔️         ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s4. Inventory & Equip %s🎒        ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s5. Battle           %s🔥         ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s║ %s6. Exit             %s🚪         ║%s\n", GREEN, YELLOW, CYAN, RESET);
+        printf("%s╚════════════════════════════════╝%s\n", YELLOW, RESET);
+
+        printf("%sEnter your choice: %s", GREEN, RESET);
+        if (!fgets(input, BUFFER_SIZE, stdin)) {
+            printf("%sError reading input.%s\n", RED, RESET);
+            continue;
+        }
+        input[strcspn(input, "\n")] = 0;
+```
 
 ##### Output
 
 #### c. Status Check
 Melihat bahwa terdapat sebuah toko senjata, anda mengecek status diri anda dengan harapan anda masih memiliki sisa uang untuk membeli senjata. Jika opsi Show Player Stats dipilih, maka program akan menunjukan Uang yang dimiliki (Jumlah dibebaskan), senjata yang sedang digunakan, Base Damage, dan jumlah musuh yang telah dimusnahkan. 
 ##### Code
+```
+void showStats(int client_sock, Player *p) {
+    char buffer[BUFFER_SIZE * 2];
+    snprintf(buffer, sizeof(buffer),
+        "\n%s╔════════════════════════════════════════════╗%s\n"
+        "%s║              🎮 Player Stats 🎮            ║%s\n"
+        "%s╠════════════════════════════════════════════╣%s\n"
+        "%s║ 💰 Gold             : %-21d║%s\n"
+        "%s║ 🗡️ Weapon           : %-21s║%s\n"
+        "%s║ ⚔️ Base Damage      : %-21d║%s\n"
+        "%s║ 🔮 Passive Ability  : %-21s║%s\n"
+        "%s║ 👾 Enemies Defeated : %-21d║%s\n"
+        "%s╚════════════════════════════════════════════╝%s\n",
+        YELLOW, RESET, YELLOW, RESET, YELLOW, RESET,
+        GREEN, p->gold, RESET,
+        BLUE, p->hasWeapon ? p->currentWeapon.name : "None", RESET,
+        CYAN, p->baseDamage, RESET,
+        MAGENTA, p->hasWeapon && p->currentWeapon.hasPassive ? p->currentWeapon.passive : "-", RESET,
+        RED, p->enemiesDefeated, RESET,
+        YELLOW, RESET);
+    send(client_sock, buffer, strlen(buffer), 0);
+}
+```
 
 ##### Output
 
 #### d. Weapon Shop
 Ternyata anda memiliki sisa uang dan langsung pergi ke toko senjata tersebut untuk membeli senjata. Terdapat 5 pilihan senjata di toko tersebut dan beberapa dari mereka memiliki passive yang unik. Disaat opsi Shop dipilih, program akan menunjukan senjata apa saja yang dapat dibeli beserta harga, damage, dan juga passive (jika ada). List senjata yang ada dan dapat dibeli beserta logic/command untuk membeli senjata tersebut diletakan di code shop.c yang nanti akan dipakai oleh dungeon.c.
 ##### Code
+```
+void displayShop(int client_sock) {
+    char buffer[BUFFER_SIZE] = "";
+
+    snprintf(buffer, sizeof(buffer),
+        "\n%s╔════╦══════════════════════╦═══════╦════════╦════════════════════════════════════╗%s\n"
+        "%s║ ID ║ Name                 ║ Price ║ Damage ║ Passive                            ║%s\n"
+        "%s╠════╬══════════════════════╬═══════╬════════╬════════════════════════════════════╣%s\n",
+        YELLOW, RESET, YELLOW, RESET, YELLOW, RESET);
+
+    for (int i = 0; i < MAX_WEAPONS; i++) {
+        const char *passive = weapons[i].hasPassive ? weapons[i].passive : "-";
+        char passiveLine1[41] = "", passiveLine2[41] = "";
+
+        strncpy(passiveLine1, passive, 40);
+        passiveLine1[40] = '\0';
+        if (strlen(passive) > 40) {
+            strncpy(passiveLine2, passive + 40, 40);
+            passiveLine2[40] = '\0';
+        }
+        char line[512];
+
+        if (strlen(passiveLine2) == 0) {
+            snprintf(line, sizeof(line),
+                "%s║ %-2d ║ %-20s ║ %-5d ║ %-6d ║ %-40s ║%s\n",
+                YELLOW, i + 1, weapons[i].name, weapons[i].price, weapons[i].base_damage, passiveLine1, RESET);
+        } else {
+            snprintf(line, sizeof(line),
+                "%s║ %-2d ║ %-20s ║ %-5d ║ %-6d ║ %-40s ║%s\n"
+                "%s║    ║                      ║       ║        ║ %-40s ║%s\n",
+                YELLOW, i + 1, weapons[i].name, weapons[i].price, weapons[i].base_damage, passiveLine1, RESET,
+                YELLOW, passiveLine2, RESET);
+        }
+        strncat(buffer, line, sizeof(buffer) - strlen(buffer) - 1);
+    }
+    strncat(buffer, YELLOW "╚════╩══════════════════════╩═══════╩════════╩════════════════════════════════════╝\n" RESET, sizeof(buffer) - strlen(buffer) - 1);
+    send(client_sock, buffer, strlen(buffer), 0);
+}
+```
 
 ##### Output
 
 #### e. Handy Inventory
 Setelah membeli senjata di toko tadi, anda membuka ransel anda untuk memakai senjata tersebut. Jika opsi View Inventory dipilih, program akan menunjukan senjata apa saja yang dimiliki dan dapat dipakai (jika senjata memiliki passive, tunjukan juga passive tersebut). Lalu apabila opsi Show Player Stats dipilih saat menggunakan weapon maka Base Damage player akan berubah dan jika memiliki passive, maka akan ada status tambahan yaitu Passive.
 ##### Code
+```
+void showInvent(int client_sock, Player *p) {
+    char buffer[BUFFER_SIZE * 2];
+    strcpy(buffer,
+        "\n╔════╦════════════════════════════╦════════╦════════════════════════════════════╗\n"
+        "║ ID ║ Name                       ║ Damage ║ Passive                            ║\n"
+        "╠════╬════════════════════════════╬════════╬════════════════════════════════════╣\n");
+
+    for (int i = 0; i < p->weaponCount; i++) {
+        char line[512];
+        const char *name = p->inventory[i].name;
+        int damage = p->inventory[i].base_damage;
+        const char *passive = p->inventory[i].hasPassive ? p->inventory[i].passive : "-";
+
+        char passive1[41] = "", passive2[41] = "";
+        strncpy(passive1, passive, 40);
+        passive1[40] = '\0';
+        if (strlen(passive) > 40) {
+            strncpy(passive2, passive + 40, 40);
+            passive2[40] = '\0';
+        }
+
+        if (strlen(passive2) == 0) {
+            snprintf(line, sizeof(line),
+                "║ %-2d ║ %-28s ║ %-6d ║ %-36s ║\n",
+                i + 1, name, damage, passive1);
+        } else {
+            snprintf(line, sizeof(line),
+                "║ %-2d ║ %-28s ║ %-6d ║ %-36s ║\n"
+                "║    ║                              ║        ║ %-36s ║\n",
+                i + 1, name, damage, passive1, passive2);
+        }
+
+        strcat(buffer, line);
+    }
+
+    strcat(buffer, "╚════╩════════════════════════════╩════════╩════════════════════════════════════╝\n");
+    send(client_sock, buffer, strlen(buffer), 0);
+}
+```
 
 ##### Output
 
 #### f.	Enemy Encounter
 Anda sekarang sudah siap untuk melewati pintu yang seram tadi, disaat anda memasuki pintu tersebut, anda langsung ditemui oleh sebuah musuh yang bukan sebuah manusia. Dengan tekad yang bulat, anda melawan musuh tersebut. Saat opsi Battle Mode dipilih, program akan menunjukan health-bar musuh serta angka yang menunjukan berapa darah musuh tersebut dan menunggu input dengan opsi attack untuk melakukan sebuah serangan dan juga exit untuk keluar dari Battle Mode. Apabila darah musuh berkurang, maka health-bar musuh akan berkurang juga. Jika darah musuh sudah 0, maka program akan menunjukan rewards berupa berapa banyak gold yang didapatkan lalu akan muncul musuh lagi.
 ##### Code
+```
+void handleBattle(int client_sock, Player *p) {
+    char buffer[BUFFER_SIZE];
+    int enemy_hp = rand() % 151 + 50; 
+    int player_hp = 100; 
+    while (enemy_hp > 0 && player_hp > 0) {
+        int bar_length = 20;
+        int enemy_bar = (enemy_hp * bar_length) / 200;
+        char health_bar[bar_length + 1];
+        memset(health_bar, ' ', bar_length);
+        for (int i = 0; i < enemy_bar; i++) {
+            health_bar[i] = '#';
+        }
+        health_bar[bar_length] = '\0';
+
+        snprintf(buffer, sizeof(buffer),
+         "\n%s╔══════════════════════════════════════╗%s\n"
+         "║ %sEnemy HP: %d%s [%s]%s\n"
+         "║ %sYour HP: %d%s\n"
+         "║ Options: [attack] [exit]            ║%s\n"
+         "%s╚══════════════════════════════════════╝%s\n",
+         YELLOW, RESET, RED, enemy_hp, RESET, health_bar, RESET,
+         GREEN, player_hp, RESET, YELLOW, YELLOW, RESET);
+        send(client_sock, buffer, strlen(buffer), 0);
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_sock, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            printf("Client disconnected during battle.\n");
+            removeClient(client_sock);
+            break;
+        }
+        buffer[strcspn(buffer, "\n")] = 0;
+        if (strcmp(buffer, "exit") == 0) {
+            enemy_hp = rand() % 151 + 50;
+            snprintf(buffer, sizeof(buffer), "%sBattle exited. Enemy HP reset.%s\n", YELLOW, RESET);
+            send(client_sock, buffer, strlen(buffer), 0);
+            return;
+        } else if (strcmp(buffer, "attack") == 0) {
+            int base_dmg = p->hasWeapon ? p->baseDamage : 5;
+            int damage = base_dmg + (rand() % 10);
+            int is_critical = (rand() % 100) < 20;
+            if (is_critical) {
+                damage *= 2;
+                snprintf(buffer, sizeof(buffer), "%sCritical Hit!%s\n", RED, RESET);
+                send(client_sock, buffer, strlen(buffer), 0);
+            }
+            int passive_triggered = 0;
+            if (p->hasWeapon && p->currentWeapon.hasPassive) {
+                if (strcmp(p->currentWeapon.passive, "Burn: 10% chance to deal 2x damage") == 0 && rand() % 100 < 10) {
+                    damage *= 2;
+                    passive_triggered = 1;
+                    snprintf(buffer, sizeof(buffer), "%sPassive Burn activated!%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Poison: Deals 5 damage per turn") == 0) {
+                    enemy_hp -= 5;
+                    passive_triggered = 1;
+                    snprintf(buffer, sizeof(buffer), "%sPassive Poison activated! Dealt 5 extra damage.%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Shock: 20% chance to chain attack") == 0 && rand() % 100 < 20) {
+                    int chain_damage = rand() % 10 + 5;
+                    enemy_hp -= chain_damage;
+                    snprintf(buffer, sizeof(buffer), "%sPassive Shock activated! Chained attack! Dealt %d extra damage.%s\n", MAGENTA, chain_damage, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Execute: Auto-kill enemies <20%% HP") == 0 && enemy_hp < 40) {
+                    enemy_hp = 0;
+                    snprintf(buffer, sizeof(buffer), "%sPassive Execute activated! Enemy auto-killed due to low HP.%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Despair: +25%% damage to enemies <50%% HP") == 0 && enemy_hp < 100) {
+                    damage = (int)(damage * 1.25);
+                    snprintf(buffer, sizeof(buffer), "%sPassive Despair activated! +25%% damage to enemy with HP below 50%%.%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Wind Chant: Immune to phys damage (2s)") == 0) {
+                    snprintf(buffer, sizeof(buffer), "%sPassive Wind Chant activated! Immune to physical damage for 2 seconds.%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Bloodlust: 20%% spell vamp") == 0) {
+                    int heal_amount = (int)(damage * 0.20);
+                    player_hp += heal_amount;
+                    snprintf(buffer, sizeof(buffer), "%sPassive Bloodlust activated! Healed %d HP.%s\n", MAGENTA, heal_amount, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Life Drain: -50%% HP regen") == 0) {
+                    enemy_hp -= 10; 
+                    snprintf(buffer, sizeof(buffer), "%sPassive Life Drain activated! Dealt 10 extra damage.%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                }
+            }
+            enemy_hp -= damage;
+            snprintf(buffer, sizeof(buffer),
+                     "%sYou dealt %d damage! Enemy HP: %d%s\n",
+                     GREEN, damage, enemy_hp > 0 ? enemy_hp : 0, RESET);
+            send(client_sock, buffer, strlen(buffer), 0);
+            if (enemy_hp <= 0) {
+                int reward = rand() % 51 + 50;
+                p->gold += reward;
+                p->enemiesDefeated++;
+                snprintf(buffer, sizeof(buffer),
+                         "%sEnemy defeated! You earned %d gold. Total gold: %d%s\n",
+                         GREEN, reward, p->gold, RESET);
+                send(client_sock, buffer, strlen(buffer), 0);
+                enemy_hp = rand() % 151 + 50;
+                continue;
+            }
+            int enemy_dmg = rand() % 11 + 5;
+            player_hp -= enemy_dmg;
+            snprintf(buffer, sizeof(buffer),
+                     "%sEnemy dealt %d damage! Your HP: %d%s\n",
+                     RED, enemy_dmg, player_hp > 0 ? player_hp : 0, RESET);
+            send(client_sock, buffer, strlen(buffer), 0);
+            if (player_hp <= 0) {
+                snprintf(buffer, sizeof(buffer), "%sYou were defeated!%s\n", RED, RESET);
+                send(client_sock, buffer, strlen(buffer), 0);
+                return;
+            }
+        } else {
+            snprintf(buffer, sizeof(buffer), "%sInvalid option. Use 'attack' or 'exit'.%s\n", RED, RESET);
+            send(client_sock, buffer, strlen(buffer), 0);
+        }
+    }
+}
+```
 
 ##### Output
 
@@ -387,24 +628,127 @@ Anda sekarang sudah siap untuk melewati pintu yang seram tadi, disaat anda memas
 -	**Health & Rewards**
 Untuk darah musuh, seberapa banyak darah yang mereka punya dibuat secara random, contoh: 50-200 HP. Lakukan hal yang sama untuk rewards. 
 ##### Code
+```
+void handleBattle(int client_sock, Player *p) {
+..........
+if (enemy_hp <= 0) {
+                int reward = rand() % 51 + 50;
+                p->gold += reward;
+                p->enemiesDefeated++;
+                snprintf(buffer, sizeof(buffer),
+                         "%sEnemy defeated! You earned %d gold. Total gold: %d%s\n",
+                         GREEN, reward, p->gold, RESET);
+                send(client_sock, buffer, strlen(buffer), 0);
+                enemy_hp = rand() % 151 + 50;
+                continue;
+            }
+```
 
 ##### Output
 
 -	**Damage Equation**
 Untuk damage, gunakan base damage sebagai kerangka awal dan tambahkan rumus damage apapun (dibebaskan, yang pasti perlu random number agar hasil damage bervariasi). Lalu buatlah logic agar setiap serangan memiliki kesempatan untuk Critical yang membuat damage anda 2x lebih besar.
 ##### Code
+```
+void handleBattle(int client_sock, Player *p) {
+..........
+ } else if (strcmp(buffer, "attack") == 0) {
+            int base_dmg = p->hasWeapon ? p->baseDamage : 5;
+            int damage = base_dmg + (rand() % 10);
+            int is_critical = (rand() % 100) < 20;
+            if (is_critical) {
+                damage *= 2;
+                snprintf(buffer, sizeof(buffer), "%sCritical Hit!%s\n", RED, RESET);
+                send(client_sock, buffer, strlen(buffer), 0);
+            }
+```
 
 ##### Output
 
 -	**Passive**
 Jika senjata yang dipakai memiliki Passive setiap kali passive tersebut menyala, maka tunjukan bahwa passive tersebut aktif.
 ##### Code
+```
+void handleBattle(int client_sock, Player *p) {
+.........
+int passive_triggered = 0;
+            if (p->hasWeapon && p->currentWeapon.hasPassive) {
+                if (strcmp(p->currentWeapon.passive, "Burn: 10% chance to deal 2x damage") == 0 && rand() % 100 < 10) {
+                    damage *= 2;
+                    passive_triggered = 1;
+                    snprintf(buffer, sizeof(buffer), "%sPassive Burn activated!%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Poison: Deals 5 damage per turn") == 0) {
+                    enemy_hp -= 5;
+                    passive_triggered = 1;
+                    snprintf(buffer, sizeof(buffer), "%sPassive Poison activated! Dealt 5 extra damage.%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Shock: 20% chance to chain attack") == 0 && rand() % 100 < 20) {
+                    int chain_damage = rand() % 10 + 5;
+                    enemy_hp -= chain_damage;
+                    snprintf(buffer, sizeof(buffer), "%sPassive Shock activated! Chained attack! Dealt %d extra damage.%s\n", MAGENTA, chain_damage, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Execute: Auto-kill enemies <20%% HP") == 0 && enemy_hp < 40) {
+                    enemy_hp = 0;
+                    snprintf(buffer, sizeof(buffer), "%sPassive Execute activated! Enemy auto-killed due to low HP.%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Despair: +25%% damage to enemies <50%% HP") == 0 && enemy_hp < 100) {
+                    damage = (int)(damage * 1.25);
+                    snprintf(buffer, sizeof(buffer), "%sPassive Despair activated! +25%% damage to enemy with HP below 50%%.%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Wind Chant: Immune to phys damage (2s)") == 0) {
+                    snprintf(buffer, sizeof(buffer), "%sPassive Wind Chant activated! Immune to physical damage for 2 seconds.%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Bloodlust: 20%% spell vamp") == 0) {
+                    int heal_amount = (int)(damage * 0.20);
+                    player_hp += heal_amount;
+                    snprintf(buffer, sizeof(buffer), "%sPassive Bloodlust activated! Healed %d HP.%s\n", MAGENTA, heal_amount, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                } else if (strcmp(p->currentWeapon.passive, "Life Drain: -50%% HP regen") == 0) {
+                    enemy_hp -= 10; 
+                    snprintf(buffer, sizeof(buffer), "%sPassive Life Drain activated! Dealt 10 extra damage.%s\n", MAGENTA, RESET);
+                    send(client_sock, buffer, strlen(buffer), 0);
+                }
+            }
+```
 
 ##### Output
 
 #### h. Error Handling
 Berikan error handling untuk opsi-opsi yang tidak ada.
 ##### Code
+``dungeon.c``
+###### Error Handling untuk attack atau exit saat Battle
+```
+void handleBattle(int client_sock, Player *p) {
+..........
+else {
+            snprintf(buffer, sizeof(buffer), "%sInvalid option. Use 'attack' or 'exit'.%s\n", RED, RESET);
+            send(client_sock, buffer, strlen(buffer), 0); }
+```
+###### Error Handling saat Memilih Weapon, Kekurangan Gold, Inventory Full, Pembelian yang tidak berhasil, dan Unknown Command 
+```
+void* handlePlayer(void* arg) {
+........
+} else {
+                if (id < 1 || id > MAX_WEAPONS) {
+                    snprintf(buffer, sizeof(buffer), "%s❌ Invalid weapon ID.%s\n", RED, RESET);
+                } else if (player->gold < weapons[id - 1].price) {
+                    snprintf(buffer, sizeof(buffer), "%s❌ Insufficient gold.%s\n", RED, RESET);
+                } else if (player->weaponCount >= MAX_WEAPONS) {
+                    snprintf(buffer, sizeof(buffer), "%s❌ Inventory full.%s\n", RED, RESET);
+                } else {
+                    snprintf(buffer, sizeof(buffer), "%s❌ Purchase failed.%s\n", RED, RESET);
+                } }
+......
+} else {
+            snprintf(buffer, sizeof(buffer), "%s❓ Unknown command.%s\n", RED, RESET);
+            send(client_sock, buffer, strlen(buffer), 0);}
+```
+###### Error Handling saat Meemilih Menu
+```
+
+```
 
 ##### Output
 
@@ -830,21 +1174,101 @@ void battle(struct SystemData *sys, struct Hunter *self) {
 
 #### i. Saat sedang memonitoring sistem, Sung Jin Woo melihat beberapa hunter melakukan kecurangan di dalam sistem. Ia menambahkan fitur di sistem yang membuat dia dapat melarang hunter tertentu untuk melakukan raid atau battle. Karena masa percobaan tak bisa berlangsung selamanya 😇, Sung Jin Woo pun juga menambahkan konfigurasi agar fiturnya dapat memperbolehkan hunter itu melakukan raid atau battle lagi. 
 ##### Code
+```
+void banHunter() {
+    char username[50];
+    printf("Enter the hunter's username to ban: ");
+    scanf("%s", username);
+    for (int i = 0; i < sys->num_hunters; i++) {
+        if (strcmp(sys->hunters[i].username, username) == 0) {
+            sys->hunters[i].banned = 1;
+            printf("%s has been banned.\n", username);
+            return;
+        }
+    }
+    printf("Not found.\n");
+}
+
+void unbanHunter() {
+    char username[50];
+    printf("Enter the hunter's username to unban: ");
+    scanf("%s", username);
+    for (int i = 0; i < sys->num_hunters; i++) {
+        if (strcmp(sys->hunters[i].username, username) == 0) {
+            sys->hunters[i].banned = 0;
+            printf("%s has been unbanned.\n", username);
+            return;
+        }
+    }
+    printf("Not found.\n");
+}
+```
 
 ##### Output
 
 #### j. Setelah beberapa pertimbangan, untuk memberikan kesempatan kedua bagi hunter yang ingin bertobat dan memulai dari awal, Sung Jin Woo juga menambahkan fitur di sistem yang membuat dia bisa mengembalikan stats hunter tertentu ke nilai awal. 
 ##### Code
+```
+void resetHunter() {
+    char username[50];
+    printf("Enter the hunter's username to reset: ");
+    scanf("%s", username);
+    for (int i = 0; i < sys->num_hunters; i++) {
+        if (strcmp(sys->hunters[i].username, username) == 0) {
+            sys->hunters[i].level = 1;
+            sys->hunters[i].exp = 0;
+            sys->hunters[i].atk = 10;
+            sys->hunters[i].hp = 100;
+            sys->hunters[i].def = 5;
+            printf("Stats for %s have been reset.\n", username);
+            return;
+        }
+    }
+    printf("Not found.\n");
+}
+```
 
 ##### Output
 
 #### k.	Untuk membuat sistem lebih menarik dan tidak membosankan, Sung Jin Woo menambahkan fitur notifikasi dungeon di setiap hunter. Saat diaktifkan, akan muncul informasi tentang semua dungeon yang terbuka dan akan terus berganti setiap 3 detik.
 ##### Code
+```
+void *notifDungeon(void *arg) {
+    while (!stop_notif) {
+        int found = 0;
+        for (int i = 0; i < sys_global->num_dungeons; i++) {
+            struct Dungeon d = sys_global->dungeons[i];
+
+            if (hunter_global->level >= d.min_level) {
+                found = 1;
+                printf("\n📢 \033[1;33m[Dungeon Alert]\033[0m %s is available for you! (Level required: %d)\n", d.name, d.min_level);
+                fflush(stdout);
+            }
+        }
+
+        if (!found) {
+            printf("\n📢 \033[1;31mNo available dungeons at your level.\033[0m\n");
+            fflush(stdout);
+        }
+        
+        sleep(3); 
+    }
+    return NULL;
+}
+```
 
 ##### Output
 
 #### l. Untuk menambah keamanan sistem agar data hunter tidak bocor, Sung Jin Woo melakukan konfigurasi agar setiap kali sistem dimatikan, maka semua shared memory yang sedang berjalan juga akan ikut terhapus. 
 ##### Code
+```
+void cleanup(int sig) {
+    printf("\n[!] System shutting down, shared memory cleaned up.\n");
+    if (sys != NULL) shmdt(sys);
+    if (shmid != -1) shmctl(shmid, IPC_RMID, NULL);
+    exit(0);
+}
+```
 
 ##### Output
 
